@@ -60,14 +60,14 @@ fun MainScreen() {
                 rememberNode {
                     ModelNode(
                         modelInstance = modelLoader.createModelInstance(
-                            assetFileLocation = "assets/kl_boox_house.glb"
+                            assetFileLocation = "kl_boox_house.glb"
                         ),
                         scaleToUnits = 1.0f
                     )
                 }
             ),
             environment = environmentLoader.createHDREnvironment(
-                assetFileLocation = "assets/passendorf_sky_4k.hdr"
+                assetFileLocation = "passendorf_snow_4k.hdr"
             )!!,
             onFrame = {
                 centerNode.rotation = cameraRotation
