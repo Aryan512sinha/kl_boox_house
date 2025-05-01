@@ -62,12 +62,12 @@ fun MainScreen() {
                         modelInstance = modelLoader.createModelInstance(
                             assetFileLocation = "kl_boox_house.glb"
                         ),
-                        scaleToUnits = 1.0f
+                        scaleToUnits = 2.0f
                     )
                 }
             ),
             environment = environmentLoader.createHDREnvironment(
-                assetFileLocation = "passendorf_snow_4k.hdr"
+                assetFileLocation = "zwartkops_straight_sunset_4k.hdr"
             )!!,
             onFrame = {
                 centerNode.rotation = cameraRotation
