@@ -1,16 +1,21 @@
 package eu.tutorials.kl_boox_house
 
 
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import io.github.sceneview.Scene
-import io.github.sceneview.animation.Transition.animateRotation
+
 import io.github.sceneview.math.Position
 import io.github.sceneview.math.Rotation
 import io.github.sceneview.math.Scale
@@ -32,20 +37,22 @@ fun MainScreen() {
         val centerNode = rememberNode(engine)
 
         val cameraNode = rememberCameraNode(engine) {
-            position = Position(y = -0.5f, z = 2.5f)
+            position = Position(y = 1.0f, z = 3.0f)
             lookAt(centerNode)
             centerNode.addChildNode(this)
         }
+        var hasRotatedOnce by remember { mutableStateOf(false) }
+        val cameraRotation = remember { Animatable(0f) }
 
-        val cameraTransition = rememberInfiniteTransition(label = "CameraRotation")
-        val cameraRotation by cameraTransition.animateRotation(
-            initialValue = Rotation(y = 0f),
-            targetValue = Rotation(y = 360f),
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 8000)
-            )
-        )
-
+        LaunchedEffect(Unit) {
+            if (!hasRotatedOnce) {
+                hasRotatedOnce = true
+                cameraRotation.animateTo(
+                    targetValue = 360f,
+                    animationSpec = tween(durationMillis = 6000, easing = LinearEasing)
+                )
+            }
+        }
         Scene(
             modifier = Modifier.fillMaxSize(),
             engine = engine,
@@ -61,17 +68,19 @@ fun MainScreen() {
                     ModelNode(
                         modelInstance = modelLoader.createModelInstance(
                             assetFileLocation = "kl_boox_house.glb"
-                        ),
-                        scaleToUnits = 2.0f
-                    )
+                            ),
+                        scaleToUnits = 1.5f,
+                        )
                 }
             ),
             environment = environmentLoader.createHDREnvironment(
-                assetFileLocation = "zwartkops_straight_sunset_4k.hdr"
+                assetFileLocation = "moonless_golf_4k.hdr"
             )!!,
             onFrame = {
-                centerNode.rotation = cameraRotation
-                cameraNode.lookAt(centerNode)
+                if (cameraRotation.value < 360f) {
+                    centerNode.rotation = Rotation(y = cameraRotation.value)
+                    cameraNode.lookAt(centerNode)
+                }
             },
             onGestureListener = rememberOnGestureListener(
                 onDoubleTap = { _, node ->
