@@ -37,10 +37,12 @@ fun MainScreen() {
         val centerNode = rememberNode(engine)
 
         val cameraNode = rememberCameraNode(engine) {
-            position = Position(y = 1.0f, z = 3.0f)
+            // Moved camera up and back for a vertical view
+            position = Position(x = 0f, y = 5f, z = 2f)
             lookAt(centerNode)
             centerNode.addChildNode(this)
         }
+
         var hasRotatedOnce by remember { mutableStateOf(false) }
         val cameraRotation = remember { Animatable(0f) }
 
@@ -53,6 +55,7 @@ fun MainScreen() {
                 )
             }
         }
+
         Scene(
             modifier = Modifier.fillMaxSize(),
             engine = engine,
@@ -68,9 +71,12 @@ fun MainScreen() {
                     ModelNode(
                         modelInstance = modelLoader.createModelInstance(
                             assetFileLocation = "kl_boox_house.glb"
-                            ),
-                        scaleToUnits = 1.5f,
-                        )
+                        ),
+                        scaleToUnits = 2.0f,
+                    ).apply {
+                        // ✅ Rotate model vertically downward
+                        rotation = Rotation(y = -90f)
+                    }
                 }
             ),
             environment = environmentLoader.createHDREnvironment(
@@ -85,14 +91,12 @@ fun MainScreen() {
             onGestureListener = rememberOnGestureListener(
                 onDoubleTap = { _, node ->
                     node?.let {
-                        // Create a new Scale object with increased values
                         val currentScale = it.scale
                         val newScale = Scale(
                             currentScale.x * 1.5f,
                             currentScale.y * 1.5f,
                             currentScale.z * 1.5f
                         )
-                        // Assign the new scale object to the node
                         it.scale = newScale
                     }
                 }
@@ -100,3 +104,4 @@ fun MainScreen() {
         )
     }
 }
+
