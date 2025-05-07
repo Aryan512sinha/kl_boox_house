@@ -5,15 +5,21 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import io.github.sceneview.Scene
 
 import io.github.sceneview.math.Position
@@ -72,10 +78,11 @@ fun MainScreen() {
                         modelInstance = modelLoader.createModelInstance(
                             assetFileLocation = "kl_boox_house.glb"
                         ),
-                        scaleToUnits = 2.0f,
+                        scaleToUnits = 1.5f,
                     ).apply {
                         // ✅ Rotate model vertically downward
                         rotation = Rotation(y = -90f)
+
                     }
                 }
             ),
@@ -101,6 +108,14 @@ fun MainScreen() {
                     }
                 }
             )
+        )
+        Image(
+            painter = painterResource(id = R.drawable.library4),  // or your logo drawable
+            contentDescription = "Library Logo",
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 8.dp)
+                .size(150.dp)
         )
     }
 }
