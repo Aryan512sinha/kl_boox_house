@@ -184,6 +184,7 @@ fun ModelNode.setupSeats() {
 
         if (isPotentialSeat) {
             node.name = "seat_$seatCounter"
+
             seatCounter++
         }
 

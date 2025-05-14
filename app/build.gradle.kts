@@ -54,8 +54,8 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    buildToolsVersion = "34.0.0"
 }
-
 dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     val nav_version = "2.7.4"
@@ -75,7 +75,6 @@ dependencies {
 
     // SceneView for AR
     implementation("io.github.sceneview:sceneview:2.3.0")
-    implementation("io.github.sceneview:sceneview-compose:2.3.0")
     implementation("io.github.sceneview:arsceneview:0.10.0")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
@@ -86,4 +85,6 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
+    implementation ("com.google.android.filament:filament-android:1.37.0")
+    implementation ("com.google.android.filament:filament-utils-android:1.37.0")
 }
