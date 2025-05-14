@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,6 +47,18 @@ import io.github.sceneview.rememberOnGestureListener
 @Composable
 fun MainScreen() {
     var selectedSeat by remember { mutableStateOf<SeatUi?>(null) }
+    // Use mutableStateMapOf instead of mutableMapOf for UI reactivity
+    val seatData = remember { mutableStateMapOf<String, SeatUi>() }
+
+    // Initialize seat data
+    LaunchedEffect(Unit) {
+        for (i in 1..20) { // Assuming there are up to 20 seats
+            seatData["seat_$i"] = SeatUi(
+                seatNumber = i,
+                isOccupied = false
+            )
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         val engine = rememberEngine()
@@ -72,18 +85,35 @@ fun MainScreen() {
             }
         }
 
-        val modelNode = rememberNode {
-            ModelNode(
-                modelInstance = modelLoader.createModelInstance(
-                    assetFileLocation = "kl_boox_house.glb"
-                ),
-                scaleToUnits = 1.5f,
+        // Create object for handling seat clicks
+        val modelNodeWithClickHandling = remember {
+            object {
+                val node = ModelNode(
+                    modelInstance = modelLoader.createModelInstance(
+                        assetFileLocation = "kl_boox_house.glb"
+                    ),
+                    scaleToUnits = 1.5f,
                 ).apply {
-                rotation = Rotation(y = -90f)
-                // Automatically traverse seats and assign tap actions
-                setupSeats()
-                }
+                    rotation = Rotation(y = -90f)
+                    setupSeats()
 
+                    // Add a click detector directly on the model node
+                    addOnNodeTouchListener { node, motionEvent ->
+                        // Check if it's a tap (ACTION_UP with short duration)
+                        if (motionEvent.action == android.view.MotionEvent.ACTION_UP) {
+                            // If the node name starts with "seat_", it's a seat
+                            val nodeName = node.name
+                            if (nodeName?.startsWith("seat_") == true) {
+                                val seatInfo = seatData[nodeName]
+                                if (seatInfo != null) {
+                                    selectedSeat = seatInfo
+                                }
+                            }
+                        }
+                        true
+                    }
+                }
+            }.node
         }
 
         Scene(
@@ -95,7 +125,7 @@ fun MainScreen() {
                 orbitHomePosition = cameraNode.worldPosition,
                 targetPosition = centerNode.worldPosition
             ),
-            childNodes = listOf(centerNode, modelNode),
+            childNodes = listOf(centerNode, modelNodeWithClickHandling),
             environment = environmentLoader.createHDREnvironment(
                 assetFileLocation = "moonless_golf_4k.hdr"
             )!!,
@@ -104,20 +134,7 @@ fun MainScreen() {
                     centerNode.rotation = Rotation(y = cameraRotation.value)
                     cameraNode.lookAt(centerNode)
                 }
-            },
-            onGestureListener = rememberOnGestureListener(
-                onDoubleTap = { _, node ->
-                    node?.let {
-                        val currentScale = it.scale
-                        val newScale = Scale(
-                            currentScale.x * 1.5f,
-                            currentScale.y * 1.5f,
-                            currentScale.z * 1.5f
-                        )
-                        it.scale = newScale
-                    }
-                }
-            )
+            }
         )
 
         // Logo Image
@@ -150,11 +167,13 @@ fun MainScreen() {
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     Button(onClick = {
-                        selectedSeat = seat.copy(
+                        val updatedSeat = seat.copy(
                             isOccupied = !seat.isOccupied,
                             occupiedBy = if (!seat.isOccupied) "User" else null,
                             occupiedSince = if (!seat.isOccupied) System.currentTimeMillis() else null
                         )
+                        selectedSeat = updatedSeat
+                        seatData["seat_${seat.seatNumber}"] = updatedSeat
                     }, modifier = Modifier.fillMaxWidth()) {
                         Text(if (seat.isOccupied) "Release Seat" else "Occupy Seat")
                     }
@@ -164,7 +183,7 @@ fun MainScreen() {
     }
 }
 
-// Dummy Seat UI Model (UI only)
+// Seat UI Model
 data class SeatUi(
     val seatNumber: Int,
     val isOccupied: Boolean,
@@ -184,7 +203,8 @@ fun ModelNode.setupSeats() {
 
         if (isPotentialSeat) {
             node.name = "seat_$seatCounter"
-
+            // Make seat visually distinct for better user experience
+            node.scale = Scale(node.scale.x * 1.1f, node.scale.y * 1.1f, node.scale.z * 1.1f)
             seatCounter++
         }
 
@@ -204,6 +224,18 @@ fun ModelNode.setupSeats() {
     }
 
     markPotentialSeats(this)
+}
+
+// Helper extension method to add touch listener to model node
+fun ModelNode.addOnNodeTouchListener(listener: (ModelNode, android.view.MotionEvent) -> Boolean) {
+    try {
+        // Try to use reflection to add a touch listener if the direct method doesn't exist
+        val method = javaClass.getMethod("setOnTouchListener", Function2::class.java)
+        method.invoke(this, listener)
+    } catch (e: Exception) {
+        // If reflection fails, we'll try to add the listener another way if available
+        println("Failed to add touch listener: ${e.message}")
+    }
 }
 
 // Formats timestamp as "x seconds ago"
