@@ -1,6 +1,7 @@
 package eu.tutorials.kl_boox_house
 
 
+import android.view.MotionEvent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 
@@ -16,7 +17,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -27,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import io.github.sceneview.Scene
@@ -41,18 +45,21 @@ import io.github.sceneview.rememberEngine
 import io.github.sceneview.rememberEnvironmentLoader
 import io.github.sceneview.rememberModelLoader
 import io.github.sceneview.rememberNode
-import io.github.sceneview.rememberOnGestureListener
+
 
 
 @Composable
 fun MainScreen() {
     var selectedSeat by remember { mutableStateOf<SeatUi?>(null) }
-    // Use mutableStateMapOf instead of mutableMapOf for UI reactivity
     val seatData = remember { mutableStateMapOf<String, SeatUi>() }
+
+    // Form fields for selected seat
+    var name by remember { mutableStateOf("") }
+    var validUntil by remember { mutableStateOf("") }
 
     // Initialize seat data
     LaunchedEffect(Unit) {
-        for (i in 1..20) { // Assuming there are up to 20 seats
+        for (i in 1..57) {
             seatData["seat_$i"] = SeatUi(
                 seatNumber = i,
                 isOccupied = false
@@ -85,36 +92,16 @@ fun MainScreen() {
             }
         }
 
-        // Create object for handling seat clicks
-        val modelNodeWithClickHandling = remember {
-            object {
-                val node = ModelNode(
-                    modelInstance = modelLoader.createModelInstance(
-                        assetFileLocation = "kl_boox_house.glb"
-                    ),
-                    scaleToUnits = 1.5f,
-                ).apply {
-                    rotation = Rotation(y = -90f)
-                    setupSeats()
-
-                    // Add a click detector directly on the model node
-                    addOnNodeTouchListener { node, motionEvent ->
-                        // Check if it's a tap (ACTION_UP with short duration)
-                        if (motionEvent.action == android.view.MotionEvent.ACTION_UP) {
-                            // If the node name starts with "seat_", it's a seat
-                            val nodeName = node.name
-                            if (nodeName?.startsWith("seat_") == true) {
-                                val seatInfo = seatData[nodeName]
-                                if (seatInfo != null) {
-                                    selectedSeat = seatInfo
-                                }
-                            }
-                        }
-                        true
-                    }
-                }
-            }.node
+        val modelNode = remember {
+            ModelNode(
+                modelInstance = modelLoader.createModelInstance("kl_boox_house_2.glb"),
+                scaleToUnits = 1.5f
+            ).apply {
+                rotation = Rotation(y = -90f)
+            }
         }
+
+        var seatsInitialized by remember { mutableStateOf(false) }
 
         Scene(
             modifier = Modifier.fillMaxSize(),
@@ -125,14 +112,32 @@ fun MainScreen() {
                 orbitHomePosition = cameraNode.worldPosition,
                 targetPosition = centerNode.worldPosition
             ),
-            childNodes = listOf(centerNode, modelNodeWithClickHandling),
-            environment = environmentLoader.createHDREnvironment(
-                assetFileLocation = "moonless_golf_4k.hdr"
-            )!!,
+            childNodes = listOf(centerNode, modelNode),
+            environment = environmentLoader.createHDREnvironment("moonless_golf_4k.hdr")!!,
+            onTouchEvent = { motionEvent,hitResult ->
+                if (motionEvent.action == MotionEvent.ACTION_UP) {
+                    val hitNode = hitResult?.node as? ModelNode
+                    val nodeName = hitNode?.name
+                    if (nodeName?.startsWith("seat_") == true) {
+                        val seat = seatData[nodeName]
+                        if (seat != null) {
+                            selectedSeat = seat
+                            name = seat.occupiedBy ?: ""
+                            validUntil = seat.validUntil ?: ""
+                        }
+                    }
+                }
+                true
+            },
             onFrame = {
                 if (cameraRotation.value < 360f) {
                     centerNode.rotation = Rotation(y = cameraRotation.value)
                     cameraNode.lookAt(centerNode)
+                }
+
+                if (!seatsInitialized) {
+                    modelNode.setupSeats()
+                    seatsInitialized = true
                 }
             }
         )
@@ -147,34 +152,50 @@ fun MainScreen() {
                 .size(150.dp)
         )
 
-        // Seat Info
+        // Seat Info Form
         selectedSeat?.let { seat ->
             Card(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(16.dp)
-                    .fillMaxWidth(0.9f)
+                    .fillMaxWidth(0.9f),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Seat ${seat.seatNumber}", style = MaterialTheme.typography.titleLarge)
+                    Text("Seat ${seat.seatNumber}", style = MaterialTheme.typography.titleLarge, color = Color.Black)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("Status: ${if (seat.isOccupied) "Occupied" else "Available"}")
-                    seat.occupiedBy?.let {
-                        Text("Occupied by: $it")
-                    }
-                    seat.occupiedSince?.let {
-                        Text("Since: ${formatTime(it)}")
-                    }
+
+                    Text("Status: ${if (seat.isOccupied) "Occupied" else "Available"}", color = Color.Black)
+
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("Occupied By") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = validUntil,
+                        onValueChange = { validUntil = it },
+                        label = { Text("Valid Until (e.g., 5 PM)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
                     Spacer(modifier = Modifier.height(12.dp))
-                    Button(onClick = {
-                        val updatedSeat = seat.copy(
-                            isOccupied = !seat.isOccupied,
-                            occupiedBy = if (!seat.isOccupied) "User" else null,
-                            occupiedSince = if (!seat.isOccupied) System.currentTimeMillis() else null
-                        )
-                        selectedSeat = updatedSeat
-                        seatData["seat_${seat.seatNumber}"] = updatedSeat
-                    }, modifier = Modifier.fillMaxWidth()) {
+
+                    Button(
+                        onClick = {
+                            val updatedSeat = seat.copy(
+                                isOccupied = !seat.isOccupied,
+                                occupiedBy = if (!seat.isOccupied) name else null,
+                                occupiedSince = if (!seat.isOccupied) System.currentTimeMillis() else null,
+                                validUntil = if (!seat.isOccupied) validUntil else null
+                            )
+                            selectedSeat = updatedSeat
+                            seatData["seat_${seat.seatNumber}"] = updatedSeat
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Text(if (seat.isOccupied) "Release Seat" else "Occupy Seat")
                     }
                 }
@@ -183,19 +204,18 @@ fun MainScreen() {
     }
 }
 
-// Seat UI Model
+// Data class with extra field
 data class SeatUi(
     val seatNumber: Int,
     val isOccupied: Boolean,
     val occupiedBy: String? = null,
-    val occupiedSince: Long? = null
+    val occupiedSince: Long? = null,
+    val validUntil: String? = null
 )
 
 // Traverse seat nodes and attach interaction
 fun ModelNode.setupSeats() {
     var seatCounter = 1
-
-    // Define recursive function
     fun markPotentialSeats(node: ModelNode) {
         val isPotentialSeat = node.worldScale.run {
             x < 1.2f && y < 1.2f && z < 1.2f
@@ -203,12 +223,10 @@ fun ModelNode.setupSeats() {
 
         if (isPotentialSeat) {
             node.name = "seat_$seatCounter"
-            // Make seat visually distinct for better user experience
             node.scale = Scale(node.scale.x * 1.1f, node.scale.y * 1.1f, node.scale.z * 1.1f)
             seatCounter++
         }
 
-        // Safely get children by index
         val childCountMethod = node.javaClass.methods.find { it.name == "getChildCount" }
         val getChildMethod = node.javaClass.methods.find { it.name == "getChild" && it.parameterTypes.size == 1 }
 
@@ -222,23 +240,20 @@ fun ModelNode.setupSeats() {
             }
         }
     }
-
     markPotentialSeats(this)
 }
 
-// Helper extension method to add touch listener to model node
+// Add touch listener via reflection
 fun ModelNode.addOnNodeTouchListener(listener: (ModelNode, android.view.MotionEvent) -> Boolean) {
     try {
-        // Try to use reflection to add a touch listener if the direct method doesn't exist
         val method = javaClass.getMethod("setOnTouchListener", Function2::class.java)
         method.invoke(this, listener)
     } catch (e: Exception) {
-        // If reflection fails, we'll try to add the listener another way if available
         println("Failed to add touch listener: ${e.message}")
     }
 }
 
-// Formats timestamp as "x seconds ago"
+// Format helper
 fun formatTime(timeMillis: Long): String {
     val seconds = (System.currentTimeMillis() - timeMillis) / 1000
     return "$seconds seconds ago"
