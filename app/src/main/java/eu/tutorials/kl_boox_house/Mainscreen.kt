@@ -7,19 +7,28 @@ import androidx.compose.animation.core.LinearEasing
 
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import io.github.sceneview.Scene
 
@@ -45,6 +55,10 @@ import io.github.sceneview.rememberEngine
 import io.github.sceneview.rememberEnvironmentLoader
 import io.github.sceneview.rememberModelLoader
 import io.github.sceneview.rememberNode
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
 
 
 
@@ -53,17 +67,39 @@ fun MainScreen() {
     var selectedSeat by remember { mutableStateOf<SeatUi?>(null) }
     val seatData = remember { mutableStateMapOf<String, SeatUi>() }
 
-    // Form fields for selected seat
+    // Enhanced form fields for selected seat
     var name by remember { mutableStateOf("") }
-    var validUntil by remember { mutableStateOf("") }
+    var billNo by remember { mutableStateOf("") }
+    var selectedTimeSlot by remember { mutableStateOf(0) }
+    var admissionDate by remember { mutableStateOf("") }
+    var expiryDate by remember { mutableStateOf("") }
+
+    // Time slots
+    val timeSlots = listOf(
+        "6:00 AM - 10:00 AM",
+        "10:00 AM - 2:00 PM",
+        "2:00 PM - 6:00 PM",
+        "6:00 PM - 10:00 PM"
+    )
 
     // Initialize seat data
     LaunchedEffect(Unit) {
         for (i in 1..57) {
             seatData["seat_$i"] = SeatUi(
                 seatNumber = i,
-                isOccupied = false
+                timeSlotBookings = mutableMapOf()
             )
+        }
+    }
+
+    // Reset form when seat or time slot changes
+    LaunchedEffect(selectedSeat, selectedTimeSlot) {
+        selectedSeat?.let { seat ->
+            val booking = seat.timeSlotBookings[selectedTimeSlot]
+            name = booking?.occupiedBy ?: ""
+            billNo = booking?.billNo ?: ""
+            admissionDate = booking?.admissionDate ?: getCurrentDate()
+            expiryDate = booking?.expiryDate ?: ""
         }
     }
 
@@ -114,7 +150,7 @@ fun MainScreen() {
             ),
             childNodes = listOf(centerNode, modelNode),
             environment = environmentLoader.createHDREnvironment("moonless_golf_4k.hdr")!!,
-            onTouchEvent = { motionEvent,hitResult ->
+            onTouchEvent = { motionEvent, hitResult ->
                 if (motionEvent.action == MotionEvent.ACTION_UP) {
                     val hitNode = hitResult?.node as? ModelNode
                     val nodeName = hitNode?.name
@@ -122,8 +158,7 @@ fun MainScreen() {
                         val seat = seatData[nodeName]
                         if (seat != null) {
                             selectedSeat = seat
-                            name = seat.occupiedBy ?: ""
-                            validUntil = seat.validUntil ?: ""
+                            selectedTimeSlot = 0 // Reset to first time slot when selecting new seat
                         }
                     }
                 }
@@ -152,51 +187,254 @@ fun MainScreen() {
                 .size(150.dp)
         )
 
-        // Seat Info Form
+        // Enhanced Seat Info Form
         selectedSeat?.let { seat ->
+            val currentBooking = seat.timeSlotBookings[selectedTimeSlot]
+            val isCurrentSlotOccupied = currentBooking != null
+
             Card(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(16.dp)
-                    .fillMaxWidth(0.9f),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                    .fillMaxWidth(0.95f),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Seat ${seat.seatNumber}", style = MaterialTheme.typography.titleLarge, color = Color.Black)
-                    Spacer(modifier = Modifier.height(8.dp))
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Header
+                    Text(
+                        text = "Seat ${seat.seatNumber}",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = Color.Black
+                    )
 
-                    Text("Status: ${if (seat.isOccupied) "Occupied" else "Available"}", color = Color.Black)
+                    // Show overall seat status
+                    val occupiedSlots = seat.timeSlotBookings.size
+                    Text(
+                        text = "Occupied Slots: $occupiedSlots/4",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Black
+                    )
 
+                    Divider(color = Color.Gray, thickness = 1.dp)
+
+                    // Time Slot Selector
+                    Text(
+                        text = "Select Time Slot:",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.Black
+                    )
+
+                    Column {
+                        timeSlots.forEachIndexed { index, timeSlot ->
+                            val isSlotOccupied = seat.timeSlotBookings.containsKey(index)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .selectable(
+                                        selected = selectedTimeSlot == index,
+                                        onClick = { selectedTimeSlot = index }
+                                    )
+                                    .padding(vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = selectedTimeSlot == index,
+                                    onClick = { selectedTimeSlot = index }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = timeSlot,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.Black
+                                )
+                                Spacer(modifier = Modifier.weight(1f))
+                                Text(
+                                    text = if (isSlotOccupied) "Occupied" else "Available",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (isSlotOccupied) Color.Red else Color.Green
+                                )
+                            }
+                        }
+                    }
+
+                    // Show current slot status
+                    Text(
+                        text = "Current Slot Status: ${if (isCurrentSlotOccupied) "Occupied" else "Available"}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (isCurrentSlotOccupied) Color.Red else Color.Green
+                    )
+
+                    Divider(color = Color.Gray, thickness = 1.dp)
+
+                    // Form Fields
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
-                        label = { Text("Occupied By") },
-                        modifier = Modifier.fillMaxWidth()
+                        label = { Text("Student Name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isCurrentSlotOccupied,
+                        singleLine = true
                     )
 
                     OutlinedTextField(
-                        value = validUntil,
-                        onValueChange = { validUntil = it },
-                        label = { Text("Valid Until (e.g., 5 PM)") },
-                        modifier = Modifier.fillMaxWidth()
+                        value = billNo,
+                        onValueChange = { billNo = it },
+                        label = { Text("Bill Number") },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isCurrentSlotOccupied,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Button(
-                        onClick = {
-                            val updatedSeat = seat.copy(
-                                isOccupied = !seat.isOccupied,
-                                occupiedBy = if (!seat.isOccupied) name else null,
-                                occupiedSince = if (!seat.isOccupied) System.currentTimeMillis() else null,
-                                validUntil = if (!seat.isOccupied) validUntil else null
-                            )
-                            selectedSeat = updatedSeat
-                            seatData["seat_${seat.seatNumber}"] = updatedSeat
-                        },
-                        modifier = Modifier.fillMaxWidth()
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(if (seat.isOccupied) "Release Seat" else "Occupy Seat")
+                        OutlinedTextField(
+                            value = admissionDate,
+                            onValueChange = { admissionDate = it },
+                            label = { Text("DOA") },
+                            modifier = Modifier.weight(1f),
+                            enabled = !isCurrentSlotOccupied,
+                            placeholder = { Text("DD/MM/YYYY") },
+                            singleLine = true
+                        )
+
+                        OutlinedTextField(
+                            value = expiryDate,
+                            onValueChange = { expiryDate = it },
+                            label = { Text("Expiry Date") },
+                            modifier = Modifier.weight(1f),
+                            enabled = !isCurrentSlotOccupied,
+                            placeholder = { Text("DD/MM/YYYY") },
+                            singleLine = true
+                        )
+                    }
+
+                    // Action Buttons
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (isCurrentSlotOccupied) {
+                            Button(
+                                onClick = {
+                                    val updatedBookings = seat.timeSlotBookings.toMutableMap()
+                                    updatedBookings.remove(selectedTimeSlot)
+                                    val updatedSeat = seat.copy(
+                                        timeSlotBookings = updatedBookings
+                                    )
+                                    selectedSeat = updatedSeat
+                                    seatData["seat_${seat.seatNumber}"] = updatedSeat
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                            ) {
+                                Text("Release Slot", color = Color.White)
+                            }
+                        } else {
+                            Button(
+                                onClick = {
+                                    val newBooking = TimeSlotBooking(
+                                        occupiedBy = name,
+                                        billNo = billNo,
+                                        admissionDate = admissionDate,
+                                        expiryDate = expiryDate,
+                                        occupiedSince = System.currentTimeMillis()
+                                    )
+                                    val updatedBookings = seat.timeSlotBookings.toMutableMap()
+                                    updatedBookings[selectedTimeSlot] = newBooking
+                                    val updatedSeat = seat.copy(
+                                        timeSlotBookings = updatedBookings
+                                    )
+                                    selectedSeat = updatedSeat
+                                    seatData["seat_${seat.seatNumber}"] = updatedSeat
+                                },
+                                modifier = Modifier.weight(1f),
+                                enabled = name.isNotBlank() && billNo.isNotBlank() &&
+                                        admissionDate.isNotBlank() && expiryDate.isNotBlank(),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.Green)
+                            ) {
+                                Text("Book Slot", color = Color.White)
+                            }
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                // Reset form
+                                name = ""
+                                billNo = ""
+                                admissionDate = getCurrentDate()
+                                expiryDate = ""
+                            },
+                            modifier = Modifier.weight(1f),
+                            enabled = !isCurrentSlotOccupied
+                        ) {
+                            Text("Clear")
+                        }
+                    }
+
+                    // Display current booking info if slot is occupied
+                    if (isCurrentSlotOccupied && currentBooking != null) {
+                        Divider(color = Color.Gray, thickness = 1.dp)
+
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = Color.LightGray.copy(alpha = 0.3f))
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    text = "Current Booking for ${timeSlots[selectedTimeSlot]}:",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = Color.Black
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                Text("Name: ${currentBooking.occupiedBy}", color = Color.Black)
+                                Text("Bill No: ${currentBooking.billNo}", color = Color.Black)
+                                Text("DOA: ${currentBooking.admissionDate}", color = Color.Black)
+                                Text("Expiry: ${currentBooking.expiryDate}", color = Color.Black)
+                                Text("Booked: ${formatTime(currentBooking.occupiedSince)}", color = Color.Black)
+                            }
+                        }
+                    }
+
+                    // Show all bookings for this seat
+                    if (seat.timeSlotBookings.isNotEmpty()) {
+                        Divider(color = Color.Gray, thickness = 1.dp)
+
+                        Text(
+                            text = "All Bookings for this Seat:",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = Color.Black
+                        )
+
+                        seat.timeSlotBookings.entries.sortedBy { it.key }.forEach { (slotIndex, booking) ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (slotIndex == selectedTimeSlot)
+                                        Color.Blue.copy(alpha = 0.1f)
+                                    else
+                                        Color.Gray.copy(alpha = 0.1f)
+                                )
+                            ) {
+                                Column(modifier = Modifier.padding(8.dp)) {
+                                    Text(
+                                        text = timeSlots[slotIndex],
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color.Black
+                                    )
+                                    Text("${booking.occupiedBy} (${booking.billNo})",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color.Black)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -204,16 +442,28 @@ fun MainScreen() {
     }
 }
 
-// Data class with extra field
-data class SeatUi(
-    val seatNumber: Int,
-    val isOccupied: Boolean,
-    val occupiedBy: String? = null,
-    val occupiedSince: Long? = null,
-    val validUntil: String? = null
+// New data class for individual time slot bookings
+data class TimeSlotBooking(
+    val occupiedBy: String,
+    val billNo: String,
+    val admissionDate: String,
+    val expiryDate: String,
+    val occupiedSince: Long
 )
 
-// Traverse seat nodes and attach interaction
+// Enhanced data class that supports multiple bookings per seat
+data class SeatUi(
+    val seatNumber: Int,
+    val timeSlotBookings: MutableMap<Int, TimeSlotBooking> = mutableMapOf()
+)
+
+// Helper function to get current date
+fun getCurrentDate(): String {
+    val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    return sdf.format(Date())
+}
+
+// Traverse seat nodes and attach interaction (unchanged)
 fun ModelNode.setupSeats() {
     var seatCounter = 1
     fun markPotentialSeats(node: ModelNode) {
@@ -243,7 +493,7 @@ fun ModelNode.setupSeats() {
     markPotentialSeats(this)
 }
 
-// Add touch listener via reflection
+// Add touch listener via reflection (unchanged)
 fun ModelNode.addOnNodeTouchListener(listener: (ModelNode, android.view.MotionEvent) -> Boolean) {
     try {
         val method = javaClass.getMethod("setOnTouchListener", Function2::class.java)
@@ -253,8 +503,8 @@ fun ModelNode.addOnNodeTouchListener(listener: (ModelNode, android.view.MotionEv
     }
 }
 
-// Format helper
+// Enhanced format helper
 fun formatTime(timeMillis: Long): String {
-    val seconds = (System.currentTimeMillis() - timeMillis) / 1000
-    return "$seconds seconds ago"
+    val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+    return sdf.format(Date(timeMillis))
 }
