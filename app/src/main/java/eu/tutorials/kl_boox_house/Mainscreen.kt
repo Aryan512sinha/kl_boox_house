@@ -2,6 +2,7 @@ package eu.tutorials.kl_boox_house
 
 
 import android.view.MotionEvent
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 
@@ -15,16 +16,22 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -60,8 +67,6 @@ import java.util.Date
 import java.util.Locale
 
 
-
-
 @Composable
 fun MainScreen() {
     var selectedSeat by remember { mutableStateOf<SeatUi?>(null) }
@@ -70,6 +75,7 @@ fun MainScreen() {
     // Enhanced form fields for selected seat
     var name by remember { mutableStateOf("") }
     var billNo by remember { mutableStateOf("") }
+    var mobileNo by remember { mutableStateOf("") }
     var selectedTimeSlot by remember { mutableStateOf(0) }
     var admissionDate by remember { mutableStateOf("") }
     var expiryDate by remember { mutableStateOf("") }
@@ -81,6 +87,15 @@ fun MainScreen() {
         "2:00 PM - 6:00 PM",
         "6:00 PM - 10:00 PM"
     )
+
+    // Back button handler
+    BackHandler {
+        if (selectedSeat != null) {
+            selectedSeat = null
+        }
+        // If no seat is selected, do nothing (stay on main screen)
+        // Remove any navigation back to login
+    }
 
     // Initialize seat data
     LaunchedEffect(Unit) {
@@ -98,6 +113,7 @@ fun MainScreen() {
             val booking = seat.timeSlotBookings[selectedTimeSlot]
             name = booking?.occupiedBy ?: ""
             billNo = booking?.billNo ?: ""
+            mobileNo = booking?.mobileNo ?: ""
             admissionDate = booking?.admissionDate ?: getCurrentDate()
             expiryDate = booking?.expiryDate ?: ""
         }
@@ -196,242 +212,301 @@ fun MainScreen() {
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(16.dp)
-                    .fillMaxWidth(0.95f),
+                    .fillMaxWidth(0.95f)
+                    .heightIn(max = 600.dp), // Add max height to prevent overflow
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
-                Column(
+                // Make the card content scrollable
+                LazyColumn(
                     modifier = Modifier.padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Header
-                    Text(
-                        text = "Seat ${seat.seatNumber}",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = Color.Black
-                    )
+                    item {
+                        // Header with close button
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Seat ${seat.seatNumber}",
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = Color.Black
+                            )
+                            IconButton(
+                                onClick = { selectedSeat = null }
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Close",
+                                    tint = Color.Black
+                                )
+                            }
+                        }
+                    }
 
-                    // Show overall seat status
-                    val occupiedSlots = seat.timeSlotBookings.size
-                    Text(
-                        text = "Occupied Slots: $occupiedSlots/4",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Black
-                    )
+                    item {
+                        // Show overall seat status
+                        val occupiedSlots = seat.timeSlotBookings.size
+                        Text(
+                            text = "Occupied Slots: $occupiedSlots/4",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Black
+                        )
 
-                    Divider(color = Color.Gray, thickness = 1.dp)
+                        Divider(color = Color.Gray, thickness = 1.dp)
+                    }
 
-                    // Time Slot Selector
-                    Text(
-                        text = "Select Time Slot:",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.Black
-                    )
+                    item {
+                        // Time Slot Selector
+                        Text(
+                            text = "Select Time Slot:",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.Black
+                        )
 
-                    Column {
-                        timeSlots.forEachIndexed { index, timeSlot ->
-                            val isSlotOccupied = seat.timeSlotBookings.containsKey(index)
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .selectable(
+                        Column {
+                            timeSlots.forEachIndexed { index, timeSlot ->
+                                val isSlotOccupied = seat.timeSlotBookings.containsKey(index)
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .selectable(
+                                            selected = selectedTimeSlot == index,
+                                            onClick = { selectedTimeSlot = index }
+                                        )
+                                        .padding(vertical = 2.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(
                                         selected = selectedTimeSlot == index,
                                         onClick = { selectedTimeSlot = index }
                                     )
-                                    .padding(vertical = 2.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = selectedTimeSlot == index,
-                                    onClick = { selectedTimeSlot = index }
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = timeSlot,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = Color.Black
-                                )
-                                Spacer(modifier = Modifier.weight(1f))
-                                Text(
-                                    text = if (isSlotOccupied) "Occupied" else "Available",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = if (isSlotOccupied) Color.Red else Color.Green
-                                )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = timeSlot,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color.Black
+                                    )
+                                    Spacer(modifier = Modifier.weight(1f))
+                                    Text(
+                                        text = if (isSlotOccupied) "Occupied" else "Available",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (isSlotOccupied) Color.Red else Color.Green
+                                    )
+                                }
                             }
                         }
                     }
 
-                    // Show current slot status
-                    Text(
-                        text = "Current Slot Status: ${if (isCurrentSlotOccupied) "Occupied" else "Available"}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (isCurrentSlotOccupied) Color.Red else Color.Green
-                    )
-
-                    Divider(color = Color.Gray, thickness = 1.dp)
-
-                    // Form Fields
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        label = { Text("Student Name") },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !isCurrentSlotOccupied,
-                        singleLine = true
-                    )
-
-                    OutlinedTextField(
-                        value = billNo,
-                        onValueChange = { billNo = it },
-                        label = { Text("Bill Number") },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !isCurrentSlotOccupied,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = admissionDate,
-                            onValueChange = { admissionDate = it },
-                            label = { Text("DOA") },
-                            modifier = Modifier.weight(1f),
-                            enabled = !isCurrentSlotOccupied,
-                            placeholder = { Text("DD/MM/YYYY") },
-                            singleLine = true
+                    item {
+                        // Show current slot status
+                        Text(
+                            text = "Current Slot Status: ${if (isCurrentSlotOccupied) "Occupied" else "Available"}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (isCurrentSlotOccupied) Color.Red else Color.Green
                         )
 
+                        Divider(color = Color.Gray, thickness = 1.dp)
+                    }
+
+                    item {
+                        // Form Fields
                         OutlinedTextField(
-                            value = expiryDate,
-                            onValueChange = { expiryDate = it },
-                            label = { Text("Expiry Date") },
-                            modifier = Modifier.weight(1f),
+                            value = name,
+                            onValueChange = { name = it },
+                            label = { Text("Student Name") },
+                            modifier = Modifier.fillMaxWidth(),
                             enabled = !isCurrentSlotOccupied,
-                            placeholder = { Text("DD/MM/YYYY") },
                             singleLine = true
                         )
                     }
 
-                    // Action Buttons
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        if (isCurrentSlotOccupied) {
-                            Button(
-                                onClick = {
-                                    val updatedBookings = seat.timeSlotBookings.toMutableMap()
-                                    updatedBookings.remove(selectedTimeSlot)
-                                    val updatedSeat = seat.copy(
-                                        timeSlotBookings = updatedBookings
-                                    )
-                                    selectedSeat = updatedSeat
-                                    seatData["seat_${seat.seatNumber}"] = updatedSeat
-                                },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                            ) {
-                                Text("Release Slot", color = Color.White)
-                            }
-                        } else {
-                            Button(
-                                onClick = {
-                                    val newBooking = TimeSlotBooking(
-                                        occupiedBy = name,
-                                        billNo = billNo,
-                                        admissionDate = admissionDate,
-                                        expiryDate = expiryDate,
-                                        occupiedSince = System.currentTimeMillis()
-                                    )
-                                    val updatedBookings = seat.timeSlotBookings.toMutableMap()
-                                    updatedBookings[selectedTimeSlot] = newBooking
-                                    val updatedSeat = seat.copy(
-                                        timeSlotBookings = updatedBookings
-                                    )
-                                    selectedSeat = updatedSeat
-                                    seatData["seat_${seat.seatNumber}"] = updatedSeat
-                                },
-                                modifier = Modifier.weight(1f),
-                                enabled = name.isNotBlank() && billNo.isNotBlank() &&
-                                        admissionDate.isNotBlank() && expiryDate.isNotBlank(),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color.Green)
-                            ) {
-                                Text("Book Slot", color = Color.White)
-                            }
-                        }
+                    item {
+                        OutlinedTextField(
+                            value = billNo,
+                            onValueChange = { billNo = it },
+                            label = { Text("Bill Number") },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !isCurrentSlotOccupied,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true
+                        )
+                    }
 
-                        OutlinedButton(
-                            onClick = {
-                                // Reset form
-                                name = ""
-                                billNo = ""
-                                admissionDate = getCurrentDate()
-                                expiryDate = ""
+                    item {
+                        OutlinedTextField(
+                            value = mobileNo,
+                            onValueChange = {
+                                if (it.length <= 10) mobileNo = it
                             },
-                            modifier = Modifier.weight(1f),
-                            enabled = !isCurrentSlotOccupied
+                            label = { Text("Mobile Number") },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !isCurrentSlotOccupied,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            singleLine = true,
+                            placeholder = { Text("Enter 10-digit mobile number") }
+                        )
+                    }
+
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text("Clear")
+                            OutlinedTextField(
+                                value = admissionDate,
+                                onValueChange = { admissionDate = it },
+                                label = { Text("DOA") },
+                                modifier = Modifier.weight(1f),
+                                enabled = !isCurrentSlotOccupied,
+                                placeholder = { Text("DD/MM/YYYY") },
+                                singleLine = true
+                            )
+
+                            OutlinedTextField(
+                                value = expiryDate,
+                                onValueChange = { expiryDate = it },
+                                label = { Text("Expiry Date") },
+                                modifier = Modifier.weight(1f),
+                                enabled = !isCurrentSlotOccupied,
+                                placeholder = { Text("DD/MM/YYYY") },
+                                singleLine = true
+                            )
+                        }
+                    }
+
+                    item {
+                        // Action Buttons
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            if (isCurrentSlotOccupied) {
+                                Button(
+                                    onClick = {
+                                        val updatedBookings = seat.timeSlotBookings.toMutableMap()
+                                        updatedBookings.remove(selectedTimeSlot)
+                                        val updatedSeat = seat.copy(
+                                            timeSlotBookings = updatedBookings
+                                        )
+                                        selectedSeat = updatedSeat
+                                        seatData["seat_${seat.seatNumber}"] = updatedSeat
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                                ) {
+                                    Text("Release Slot", color = Color.White)
+                                }
+                            } else {
+                                Button(
+                                    onClick = {
+                                        val newBooking = TimeSlotBooking(
+                                            occupiedBy = name,
+                                            billNo = billNo,
+                                            mobileNo = mobileNo,
+                                            admissionDate = admissionDate,
+                                            expiryDate = expiryDate,
+                                            occupiedSince = System.currentTimeMillis()
+                                        )
+                                        val updatedBookings = seat.timeSlotBookings.toMutableMap()
+                                        updatedBookings[selectedTimeSlot] = newBooking
+                                        val updatedSeat = seat.copy(
+                                            timeSlotBookings = updatedBookings
+                                        )
+                                        selectedSeat = updatedSeat
+                                        seatData["seat_${seat.seatNumber}"] = updatedSeat
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    enabled = name.isNotBlank() && billNo.isNotBlank() &&
+                                            mobileNo.isNotBlank() && mobileNo.length == 10 &&
+                                            admissionDate.isNotBlank() && expiryDate.isNotBlank(),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Green)
+                                ) {
+                                    Text("Book Slot", color = Color.White)
+                                }
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    // Reset form
+                                    name = ""
+                                    billNo = ""
+                                    mobileNo = ""
+                                    admissionDate = getCurrentDate()
+                                    expiryDate = ""
+                                },
+                                modifier = Modifier.weight(1f),
+                                enabled = !isCurrentSlotOccupied
+                            ) {
+                                Text("Clear")
+                            }
                         }
                     }
 
                     // Display current booking info if slot is occupied
                     if (isCurrentSlotOccupied && currentBooking != null) {
-                        Divider(color = Color.Gray, thickness = 1.dp)
+                        item {
+                            Divider(color = Color.Gray, thickness = 1.dp)
 
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = Color.LightGray.copy(alpha = 0.3f))
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(
-                                    text = "Current Booking for ${timeSlots[selectedTimeSlot]}:",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    color = Color.Black
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = Color.LightGray.copy(alpha = 0.3f))
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Text(
+                                        text = "Current Booking for ${timeSlots[selectedTimeSlot]}:",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = Color.Black
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
 
-                                Text("Name: ${currentBooking.occupiedBy}", color = Color.Black)
-                                Text("Bill No: ${currentBooking.billNo}", color = Color.Black)
-                                Text("DOA: ${currentBooking.admissionDate}", color = Color.Black)
-                                Text("Expiry: ${currentBooking.expiryDate}", color = Color.Black)
-                                Text("Booked: ${formatTime(currentBooking.occupiedSince)}", color = Color.Black)
+                                    Text("Name: ${currentBooking.occupiedBy}", color = Color.Black)
+                                    Text("Bill No: ${currentBooking.billNo}", color = Color.Black)
+                                    Text("Mobile: ${currentBooking.mobileNo}", color = Color.Black)
+                                    Text("DOA: ${currentBooking.admissionDate}", color = Color.Black)
+                                    Text("Expiry: ${currentBooking.expiryDate}", color = Color.Black)
+                                    Text("Booked: ${formatTime(currentBooking.occupiedSince)}", color = Color.Black)
+                                }
                             }
                         }
                     }
 
                     // Show all bookings for this seat
                     if (seat.timeSlotBookings.isNotEmpty()) {
-                        Divider(color = Color.Gray, thickness = 1.dp)
+                        item {
+                            Divider(color = Color.Gray, thickness = 1.dp)
 
-                        Text(
-                            text = "All Bookings for this Seat:",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = Color.Black
-                        )
+                            Text(
+                                text = "All Bookings for this Seat:",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = Color.Black
+                            )
 
-                        seat.timeSlotBookings.entries.sortedBy { it.key }.forEach { (slotIndex, booking) ->
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = if (slotIndex == selectedTimeSlot)
-                                        Color.Blue.copy(alpha = 0.1f)
-                                    else
-                                        Color.Gray.copy(alpha = 0.1f)
-                                )
-                            ) {
-                                Column(modifier = Modifier.padding(8.dp)) {
-                                    Text(
-                                        text = timeSlots[slotIndex],
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Color.Black
+                            seat.timeSlotBookings.entries.sortedBy { it.key }.forEach { (slotIndex, booking) ->
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (slotIndex == selectedTimeSlot)
+                                            Color.Blue.copy(alpha = 0.1f)
+                                        else
+                                            Color.Gray.copy(alpha = 0.1f)
                                     )
-                                    Text("${booking.occupiedBy} (${booking.billNo})",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Color.Black)
+                                ) {
+                                    Column(modifier = Modifier.padding(8.dp)) {
+                                        Text(
+                                            text = timeSlots[slotIndex],
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color.Black
+                                        )
+                                        Text("${booking.occupiedBy} (${booking.billNo})",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color.Black)
+                                        Text("Mobile: ${booking.mobileNo}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color.Black)
+                                    }
                                 }
                             }
                         }
@@ -442,10 +517,11 @@ fun MainScreen() {
     }
 }
 
-// New data class for individual time slot bookings
+// Updated data class for individual time slot bookings with mobile number
 data class TimeSlotBooking(
     val occupiedBy: String,
     val billNo: String,
+    val mobileNo: String,
     val admissionDate: String,
     val expiryDate: String,
     val occupiedSince: Long
