@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "274869932972",
+    "project_id": "libraryadminapp-590d5",
+    "storage_bucket": "libraryadminapp-590d5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:274869932972:android:dd76a09dd2997d7db36009",
+        "android_client_info": {
+          "package_name": "eu.tutorials.kl_boox_house"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBCZl2rKXWWnhKtt7qjKuvKgFsL3u0i3TY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
