@@ -14,7 +14,7 @@ fun Modifier.border(width: androidx.compose.ui.unit.Dp, brush: androidx.compose.
 }
 
 fun Modifier.rotate(degrees: Float): Modifier {
-    return this.rotate(degrees)
+    return androidx.compose.ui.draw.rotate(degrees)
 }
 
 fun getCurrentDate(): String {
