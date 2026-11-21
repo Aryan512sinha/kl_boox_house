@@ -1,456 +1,272 @@
 package eu.tutorials.kl_boox_house
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.List
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
+
+// NEW: Consolidated Booking Info for Reports (similar to MainScreen)
+data class ConsolidatedReportBooking(
+    val booking: TimeSlotBooking,
+    val timeSlots: List<Pair<Int, String>>,
+    val seatNumber: Int
+)
+
+// NEW: Helper function to consolidate bookings by bill number
+fun consolidateBookingsByBillNo(
+    seatData: Map<String, SeatUi>,
+    timeSlots: List<String>
+): List<ConsolidatedReportBooking> {
+    val allBookings = mutableMapOf<String, MutableList<Triple<Int, Int, TimeSlotBooking>>>()
+
+    // Collect all bookings grouped by bill number
+    seatData.values.forEach { seat ->
+        seat.timeSlotBookings.forEach { (slotIndex, booking) ->
+            val key = booking.billNo
+            if (!allBookings.containsKey(key)) {
+                allBookings[key] = mutableListOf()
+            }
+            allBookings[key]!!.add(Triple(seat.seatNumber, slotIndex, booking))
+        }
+    }
+
+    // Create consolidated bookings
+    return allBookings.map { (_, bookingList) ->
+        val firstBooking = bookingList.first()
+        val seatNumber = firstBooking.first
+        val booking = firstBooking.third
+        val slots = bookingList.map { Pair(it.second, timeSlots[it.second]) }.sortedBy { it.first }
+
+        ConsolidatedReportBooking(
+            booking = booking,
+            timeSlots = slots,
+            seatNumber = seatNumber
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReportsScreen(
     seatData: Map<String, SeatUi>,
-    onBackPressed: () -> Unit
+    onBackPressed: () -> Unit = {},
+    onNavigateToHome: () -> Unit = {},
+    onNavigateToSeats: () -> Unit = {},
+    onNavigateToMessages: () -> Unit = {}
 ) {
     var selectedReportDate by remember { mutableStateOf(getCurrentDate()) }
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState()
+    var selectedNavItem by remember { mutableStateOf(3) }
+
+    val timeSlots = listOf(
+        "6:00 AM - 10:00 AM",
+        "10:00 AM - 2:00 PM",
+        "2:00 PM - 6:00 PM",
+        "6:00 PM - 10:00 PM"
+    )
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            // Header with Back Button
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onBackPressed) {
-                    Icon(
-                        Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        AppColors.LightBackground,
+                        Color(0xFFE8E8E8)
                     )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Active Students Report",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
                 )
-            }
-
-            // Date Selector Card - Made more compact
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                shape = RoundedCornerShape(12.dp)
+            )
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Enhanced Header
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.Transparent,
+                shadowElevation = 12.dp
             ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Text(
-                        text = "Select Date for Payment Summary",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
+                Box(
+                    modifier = Modifier.background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                AppColors.DarkBackground,
+                                AppColors.DarkSecondary
+                            )
+                        )
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
+                ) {
+                    Column(modifier = Modifier.padding(Spacing.xl)) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = AppColors.GoldPrimary.copy(alpha = 0.2f),
+                                modifier = Modifier.size(56.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text("📊", fontSize = 28.sp)
+                                }
+                            }
 
-                    OutlinedTextField(
-                        value = selectedReportDate,
-                        onValueChange = { selectedReportDate = it },
-                        label = { Text("Date", fontSize = 12.sp) },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("DD/MM/YYYY") },
-                        singleLine = true,
-                        shape = RoundedCornerShape(10.dp),
-                        colors = TextFieldDefaults.outlinedTextFieldColors(
-                            focusedBorderColor = Color(0xFFFFD700),
-                            cursorColor = Color(0xFFFFD700)
-                        ),
-                        trailingIcon = {
-                            IconButton(onClick = { showDatePicker = true }) {
-                                Icon(
-                                    painter = painterResource(id = android.R.drawable.ic_menu_my_calendar),
-                                    contentDescription = "Select Date",
-                                    tint = Color(0xFFFFD700)
+                            Column {
+                                Text(
+                                    text = "Active Students Report",
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = (-0.5).sp
+                                )
+                                Text(
+                                    text = "Financial & booking overview",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.White.copy(alpha = 0.7f)
                                 )
                             }
                         }
-                    )
-                }
-            }
 
-            // Payment Summary Card - Made SMALLER
-            val allBookings = seatData.values.flatMap { seat ->
-                seat.timeSlotBookings.values
-            }.filter { booking ->
-                booking.admissionDate == selectedReportDate
-            }
+                        Spacer(modifier = Modifier.height(Spacing.large))
 
-            val cashPayments = allBookings.count { it.paymentMode == "Cash" }
-            val onlinePayments = allBookings.count { it.paymentMode == "Online" }
-
-            val totalCashAmount = allBookings
-                .filter { it.paymentMode == "Cash" }
-                .sumOf {
-                    val paid = it.amountPaid.toIntOrNull() ?: 0
-                    val due = it.dueAmount.toIntOrNull() ?: 0
-                    paid + due
-                }
-
-            val totalOnlineAmount = allBookings
-                .filter { it.paymentMode == "Online" }
-                .sumOf {
-                    val paid = it.amountPaid.toIntOrNull() ?: 0
-                    val due = it.dueAmount.toIntOrNull() ?: 0
-                    paid + due
-                }
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFD700).copy(alpha = 0.9f)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Text(
-                        text = "Payment Summary - $selectedReportDate",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black,
-                        fontSize = 14.sp
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        // Cash Summary - Compact
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = Color(0xFF2196F3).copy(alpha = 0.2f)
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(8.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Text(
-                                        text = "💵 Cash",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.Black,
-                                        fontSize = 12.sp
-                                    )
-                                    Text(
-                                        text = "$cashPayments payments",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Color.Black,
-                                        fontSize = 10.sp
-                                    )
-                                    Text(
-                                        text = "₹$totalCashAmount",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF2196F3),
-                                        fontSize = 16.sp
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.width(6.dp))
-
-                        // Online Summary - Compact
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = Color(0xFF4CAF50).copy(alpha = 0.2f)
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(8.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Text(
-                                        text = "💳 Online",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.Black,
-                                        fontSize = 12.sp
-                                    )
-                                    Text(
-                                        text = "$onlinePayments payments",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Color.Black,
-                                        fontSize = 10.sp
-                                    )
-                                    Text(
-                                        text = "₹$totalOnlineAmount",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF4CAF50),
-                                        fontSize = 16.sp
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Divider(color = Color.Black.copy(alpha = 0.2f))
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = "Total: ₹${totalCashAmount + totalOnlineAmount}",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black,
-                            fontSize = 16.sp
+                        // Enhanced Date Selector
+                        EnhancedDateSelector(
+                            selectedDate = selectedReportDate,
+                            onDateChange = { selectedReportDate = it },
+                            onShowPicker = { showDatePicker = true }
                         )
                     }
                 }
             }
 
-            // NEW: Due Students Card
-            val dueStudents = getAllActiveBookings(seatData).filter { activeBooking ->
-                val dueAmount = activeBooking.booking.dueAmount.toIntOrNull() ?: 0
-                dueAmount > 0
-            }
+            // Content
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = Spacing.large),
+                verticalArrangement = Arrangement.spacedBy(Spacing.medium),
+                contentPadding = PaddingValues(top = Spacing.large, bottom = 80.dp)
+            ) {
+                // Payment Summary Card - FIXED: Only count amount paid, not due
+                item {
+                    EnhancedPaymentSummaryCardFixed(
+                        seatData = seatData,
+                        selectedDate = selectedReportDate
+                    )
+                }
 
-            if (dueStudents.isNotEmpty()) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFF5252).copy(alpha = 0.15f)),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                // Due Students Section - FIXED: Consolidated and expandable
+                item {
+                    val consolidatedBookings = consolidateBookingsByBillNo(seatData, timeSlots)
+                    val dueStudents = consolidatedBookings.filter {
+                        (it.booking.dueAmount.toIntOrNull() ?: 0) > 0
+                    }
+
+                    if (dueStudents.isNotEmpty()) {
+                        EnhancedDueStudentsCardFixed(dueStudents = dueStudents)
+                    }
+                }
+
+                // Active Students Section - FIXED: Consolidated bookings
+                item {
+                    val consolidatedBookings = consolidateBookingsByBillNo(seatData, timeSlots)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Active Students",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = AppColors.GoldPrimary.copy(alpha = 0.2f)
                         ) {
                             Text(
-                                text = "⚠️ Students with Due",
-                                style = MaterialTheme.typography.titleSmall,
+                                text = "${consolidatedBookings.size}",
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFFD32F2F),
-                                fontSize = 14.sp
+                                modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.xs)
                             )
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = Color(0xFFD32F2F)
-                            ) {
-                                Text(
-                                    text = "${dueStudents.size}",
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Divider(color = Color(0xFFD32F2F).copy(alpha = 0.3f))
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // List of due students - compact view
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            dueStudents.take(5).forEach { activeBooking ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = activeBooking.booking.occupiedBy,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = Color.Black,
-                                            fontSize = 13.sp
-                                        )
-                                        Text(
-                                            text = "Bill: ${activeBooking.booking.billNo}",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = Color.Gray,
-                                            fontSize = 11.sp
-                                        )
-                                    }
-                                    Surface(
-                                        shape = RoundedCornerShape(6.dp),
-                                        color = Color(0xFFD32F2F).copy(alpha = 0.15f)
-                                    ) {
-                                        Text(
-                                            text = "₹${activeBooking.booking.dueAmount}",
-                                            color = Color(0xFFD32F2F),
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                        )
-                                    }
-                                }
-                            }
-
-                            if (dueStudents.size > 5) {
-                                Text(
-                                    text = "+ ${dueStudents.size - 5} more in list below",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color.Gray,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    modifier = Modifier.padding(top = 4.dp)
-                                )
-                            }
                         }
                     }
                 }
-            }
 
-            // Active Students List (sorted by expiry date)
-            val activeStudentsCount = getAllActiveBookings(seatData).size
-            Text(
-                text = "Active Students ($activeStudentsCount)",
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp),
-                fontSize = 16.sp
-            )
+                val consolidatedBookings = consolidateBookingsByBillNo(seatData, timeSlots)
+                    .sortedBy { parseDate(it.booking.expiryDate) }
 
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                LazyColumn(
-                    modifier = Modifier.padding(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    val activeStudents = getAllActiveBookings(seatData)
-                        .sortedBy { parseDate(it.booking.expiryDate) }
-
-                    if (activeStudents.isEmpty()) {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(32.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "No active students",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = Color.Gray
-                                )
-                            }
-                        }
-                    } else {
-                        items(activeStudents.size) { index ->
-                            val item = activeStudents[index]
-                            StudentReportCard(
-                                studentName = item.booking.occupiedBy,
-                                seatNumber = item.seatNumber,
-                                timeSlot = item.timeSlot,
-                                billNo = item.booking.billNo,
-                                mobileNo = item.booking.mobileNo,
-                                admissionDate = item.booking.admissionDate,
-                                expiryDate = item.booking.expiryDate,
-                                amountPaid = item.booking.amountPaid,
-                                dueAmount = item.booking.dueAmount,
-                                paymentMode = item.booking.paymentMode,
-                                subscriptionType = item.booking.subscriptionType
-                            )
-                        }
+                if (consolidatedBookings.isEmpty()) {
+                    item {
+                        EnhancedEmptyState(
+                            icon = "📚",
+                            title = "No Active Students",
+                            message = "There are no active bookings\nat the moment."
+                        )
+                    }
+                } else {
+                    items(consolidatedBookings.size) { index ->
+                        EnhancedStudentReportCardFixed(
+                            consolidatedBooking = consolidatedBookings[index],
+                            timeSlots = timeSlots
+                        )
                     }
                 }
             }
         }
+
+        // Enhanced Bottom Navigation
+        EnhancedBottomNavigation(
+            selectedItem = selectedNavItem,
+            onItemSelected = { index ->
+                selectedNavItem = index
+                when (index) {
+                    0 -> onNavigateToHome()
+                    1 -> onNavigateToSeats()
+                    2 -> onNavigateToMessages()
+                }
+            },
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
 
         // DatePicker Dialog
         if (showDatePicker) {
             DatePickerDialog(
                 onDismissRequest = { showDatePicker = false },
                 confirmButton = {
-                    TextButton(
-                        onClick = {
-                            datePickerState.selectedDateMillis?.let { millis ->
-                                val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                                selectedReportDate = sdf.format(Date(millis))
-                            }
-                            showDatePicker = false
+                    TextButton(onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                            selectedReportDate = sdf.format(Date(millis))
                         }
-                    ) {
-                        Text("OK", color = Color(0xFFFFD700))
+                        showDatePicker = false
+                    }) {
+                        Text("OK", color = AppColors.GoldPrimary, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
@@ -461,10 +277,10 @@ fun ReportsScreen(
             ) {
                 DatePicker(
                     state = datePickerState,
-                    colors = androidx.compose.material3.DatePickerDefaults.colors(
-                        selectedDayContainerColor = Color(0xFFFFD700),
-                        todayContentColor = Color(0xFFFFD700),
-                        todayDateBorderColor = Color(0xFFFFD700)
+                    colors = DatePickerDefaults.colors(
+                        selectedDayContainerColor = AppColors.GoldPrimary,
+                        todayContentColor = AppColors.GoldPrimary,
+                        todayDateBorderColor = AppColors.GoldPrimary
                     )
                 )
             }
@@ -472,270 +288,708 @@ fun ReportsScreen(
     }
 }
 
-// COMPACT EXPANDABLE STUDENT CARD - Perfect for 200+ students
 @Composable
-fun StudentReportCard(
-    studentName: String,
-    seatNumber: Int,
-    timeSlot: Int,
-    billNo: String,
-    mobileNo: String,
-    admissionDate: String,
-    expiryDate: String,
-    amountPaid: String,
-    dueAmount: String,
-    paymentMode: String,
-    subscriptionType: String
+fun EnhancedDateSelector(
+    selectedDate: String,
+    onDateChange: (String) -> Unit,
+    onShowPicker: () -> Unit
 ) {
-    var isExpanded by remember { mutableStateOf(false) }
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White.copy(alpha = 0.15f),
+        shadowElevation = 4.dp
+    ) {
+        OutlinedTextField(
+            value = selectedDate,
+            onValueChange = onDateChange,
+            label = {
+                Text(
+                    "Date for Payment Summary",
+                    fontSize = 12.sp,
+                    color = Color.White.copy(alpha = 0.7f)
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("DD/MM/YYYY", color = Color.White.copy(alpha = 0.5f)) },
+            singleLine = true,
+            shape = RoundedCornerShape(16.dp),
+            colors = TextFieldDefaults.colors(
+                unfocusedContainerColor = Color.Transparent,
+                focusedContainerColor = Color.Transparent,
+                focusedIndicatorColor = AppColors.GoldPrimary,
+                unfocusedIndicatorColor = Color.White.copy(alpha = 0.3f),
+                cursorColor = AppColors.GoldPrimary,
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White
+            ),
+            trailingIcon = {
+                IconButton(onClick = onShowPicker) {
+                    Icon(
+                        painter = painterResource(id = android.R.drawable.ic_menu_my_calendar),
+                        contentDescription = "Select Date",
+                        tint = AppColors.GoldPrimary
+                    )
+                }
+            }
+        )
+    }
+}
 
-    val timeSlots = listOf(
-        "6:00 AM - 10:00 AM",
-        "10:00 AM - 2:00 PM",
-        "2:00 PM - 6:00 PM",
-        "6:00 PM - 10:00 PM"
-    )
+// FIXED: Payment Summary - Only counts amount paid, not due amount, and counts each bill number only once
+@Composable
+fun EnhancedPaymentSummaryCardFixed(
+    seatData: Map<String, SeatUi>,
+    selectedDate: String
+) {
+    // FIXED: Group by bill number to avoid counting the same payment multiple times
+    val uniqueBookingsByBillNo = seatData.values.flatMap { seat ->
+        seat.timeSlotBookings.values
+    }.filter { it.admissionDate == selectedDate }
+        .distinctBy { it.billNo } // Only count each bill number once!
 
-    val isExpiringSoon = isDateWithinDays(expiryDate, 7)
-    val isExpired = isDateExpired(expiryDate)
+    val cashPayments = uniqueBookingsByBillNo.count { it.paymentMode == "Cash" }
+    val onlinePayments = uniqueBookingsByBillNo.count { it.paymentMode == "Online" }
+
+    // FIXED: Only sum amountPaid, not including dueAmount, and only once per bill number
+    val totalCashAmount = uniqueBookingsByBillNo.filter { it.paymentMode == "Cash" }
+        .sumOf { it.amountPaid.toIntOrNull() ?: 0 }
+
+    val totalOnlineAmount = uniqueBookingsByBillNo.filter { it.paymentMode == "Online" }
+        .sumOf { it.amountPaid.toIntOrNull() ?: 0 }
+
+    val totalAmount = totalCashAmount + totalOnlineAmount
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .selectable(
-                selected = isExpanded,
-                onClick = { isExpanded = !isExpanded }
-            ),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isExpanded) 8.dp else 2.dp),
-        shape = RoundedCornerShape(12.dp)
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        shape = RoundedCornerShape(24.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp)
+        Box(
+            modifier = Modifier.background(
+                Brush.linearGradient(
+                    colors = listOf(
+                        AppColors.GoldPrimary.copy(alpha = 0.9f),
+                        AppColors.GoldDark.copy(alpha = 0.9f)
+                    )
+                )
+            )
         ) {
-            // COMPACT VIEW - Always visible (Name, Seat, Time Slot, Status)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Left side: Name
+            Column(modifier = Modifier.padding(Spacing.xl)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.small),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("💰", fontSize = 24.sp)
+                    Text(
+                        text = "Payment Summary",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                }
+
                 Text(
-                    text = studentName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black,
-                    modifier = Modifier.weight(1f)
+                    text = selectedDate,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Black.copy(alpha = 0.7f)
                 )
 
-                // Right side: Status Badge
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = when {
-                        isExpired -> Color.Red
-                        isExpiringSoon -> Color(0xFFFFA500)
-                        else -> Color.Green
-                    }
+                Spacer(modifier = Modifier.height(Spacing.xl))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.medium)
                 ) {
-                    Text(
-                        text = when {
-                            isExpired -> "EXPIRED"
-                            isExpiringSoon -> "EXPIRING"
-                            else -> "ACTIVE"
-                        },
-                        color = Color.White,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                    PaymentModeCard(
+                        icon = "💵",
+                        label = "Cash",
+                        count = cashPayments,
+                        amount = totalCashAmount,
+                        color = AppColors.Info,
+                        modifier = Modifier.weight(1f)
                     )
-                }
-            }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Seat and Time Slot Row (Always visible)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = Color(0xFFE8F5E9)
-                ) {
-                    Text(
-                        text = "Seat $seatNumber",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF2E7D32),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    PaymentModeCard(
+                        icon = "💳",
+                        label = "Online",
+                        count = onlinePayments,
+                        amount = totalOnlineAmount,
+                        color = AppColors.Success,
+                        modifier = Modifier.weight(1f)
                     )
                 }
 
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = Color(0xFFE3F2FD)
+                Spacer(modifier = Modifier.height(Spacing.large))
+                Divider(color = Color.Black.copy(alpha = 0.2f), thickness = 2.dp)
+                Spacer(modifier = Modifier.height(Spacing.large))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = timeSlots.getOrNull(timeSlot) ?: "Unknown",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF1976D2),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
-            }
-
-            // EXPANDED VIEW - Only visible when clicked
-            if (isExpanded) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Divider(color = Color.LightGray.copy(alpha = 0.5f))
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Details Section
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Bill No
-                    DetailRow(
-                        label = "Bill No:",
-                        value = billNo,
-                        valueColor = Color.Black
-                    )
-
-                    // Mobile
-                    DetailRow(
-                        label = "Mobile:",
-                        value = mobileNo,
-                        valueColor = Color.Black
-                    )
-
-                    // Subscription Type
-                    DetailRow(
-                        label = "Subscription:",
-                        value = subscriptionType,
-                        valueColor = Color.Black
-                    )
-
-                    // DOA
-                    DetailRow(
-                        label = "DOA:",
-                        value = admissionDate,
-                        valueColor = Color.Black
-                    )
-
-                    // Expiry Date with highlighting
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Column {
                         Text(
-                            text = "Expiry:",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray,
-                            fontWeight = FontWeight.Medium
+                            text = "Total Revenue",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.Black.copy(alpha = 0.7f)
                         )
                         Text(
-                            text = expiryDate,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = when {
-                                isExpired -> Color.Red
-                                isExpiringSoon -> Color(0xFFFFA500)
-                                else -> Color.Black
-                            },
-                            fontWeight = FontWeight.Bold
+                            text = "₹$totalAmount",
+                            style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
                         )
                     }
 
-                    // Amount Paid
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Surface(
+                        shape = CircleShape,
+                        color = Color.Black.copy(alpha = 0.1f),
+                        modifier = Modifier.size(64.dp)
                     ) {
-                        Text(
-                            text = "Amount Paid:",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = "₹$amountPaid",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFF4CAF50),
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    // Due Amount with indicator
-                    val hasDue = dueAmount.toIntOrNull()?.let { it > 0 } ?: false
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Due:",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
+                        Box(contentAlignment = Alignment.Center) {
                             Text(
-                                text = "₹$dueAmount",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = if (hasDue) Color.Red else Color.Black,
-                                fontWeight = if (hasDue) FontWeight.Bold else FontWeight.Normal
+                                text = "${cashPayments + onlinePayments}",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Black
                             )
-                            if (hasDue) {
-                                Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = Color.Red.copy(alpha = 0.15f)
-                                ) {
-                                    Text(
-                                        text = "PENDING",
-                                        color = Color.Red,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                                    )
-                                }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PaymentModeCard(
+    icon: String,
+    label: String,
+    count: Int,
+    amount: Int,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = Color.Black.copy(alpha = 0.1f)
+    ) {
+        Column(
+            modifier = Modifier.padding(Spacing.large),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(text = icon, fontSize = 32.sp)
+            Spacer(modifier = Modifier.height(Spacing.small))
+            Text(
+                text = label,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                color = Color.Black
+            )
+            Text(
+                text = "$count payments",
+                fontSize = 12.sp,
+                color = Color.Black.copy(alpha = 0.6f)
+            )
+            Spacer(modifier = Modifier.height(Spacing.small))
+            Text(
+                text = "₹$amount",
+                fontWeight = FontWeight.Bold,
+                color = Color.Black,
+                fontSize = 20.sp
+            )
+        }
+    }
+}
+
+// FIXED: Due Students Card - Now expandable and consolidated
+@Composable
+fun EnhancedDueStudentsCardFixed(dueStudents: List<ConsolidatedReportBooking>) {
+    var isExpanded by remember { mutableStateOf(false) }
+    val totalDue = dueStudents.sumOf { it.booking.dueAmount.toIntOrNull() ?: 0 }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        shape = RoundedCornerShape(20.dp)
+    ) {
+        Box(
+            modifier = Modifier.background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        AppColors.Error.copy(alpha = 0.1f),
+                        Color.White
+                    )
+                )
+            )
+        ) {
+            Column(modifier = Modifier.padding(Spacing.xl)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.small),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("⚠️", fontSize = 24.sp)
+                        Column {
+                            Text(
+                                text = "Students with Due",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = AppColors.Error
+                            )
+                            Text(
+                                text = "Total: ₹$totalDue",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+
+                    Surface(
+                        shape = CircleShape,
+                        color = AppColors.Error,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "${dueStudents.size}",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(Spacing.large))
+                Divider(color = AppColors.Error.copy(alpha = 0.2f))
+                Spacer(modifier = Modifier.height(Spacing.large))
+
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.medium)) {
+                    // Show first 5 students
+                    dueStudents.take(5).forEach { consolidatedBooking ->
+                        DueStudentItemFixed(consolidatedBooking)
+                    }
+
+                    // FIXED: Clickable expand button if more than 5 students
+                    if (dueStudents.size > 5) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { isExpanded = !isExpanded },
+                            shape = RoundedCornerShape(12.dp),
+                            color = AppColors.Error.copy(alpha = 0.05f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(Spacing.medium),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = if (isExpanded)
+                                        "Show less"
+                                    else
+                                        "+ ${dueStudents.size - 5} more students with due",
+                                    fontSize = 13.sp,
+                                    color = AppColors.Error,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.width(Spacing.xs))
+                                Text(
+                                    text = if (isExpanded) "▲" else "▼",
+                                    color = AppColors.Error,
+                                    fontSize = 12.sp
+                                )
                             }
                         }
                     }
 
-                    // Payment Mode
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    // Show remaining students when expanded
+                    AnimatedVisibility(
+                        visible = isExpanded,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(Spacing.medium)) {
+                            dueStudents.drop(5).forEach { consolidatedBooking ->
+                                DueStudentItemFixed(consolidatedBooking)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// FIXED: Due Student Item - Shows consolidated booking
+@Composable
+fun DueStudentItemFixed(consolidatedBooking: ConsolidatedReportBooking) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = Color(0xFFFFF5F5)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Spacing.large),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    consolidatedBooking.booking.occupiedBy,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = Color.Black
+                )
+                Spacer(modifier = Modifier.height(Spacing.xs))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Bill:",
+                        fontSize = 12.sp,
+                        color = Color.Gray
+                    )
+                    Text(
+                        consolidatedBooking.booking.billNo,
+                        fontSize = 12.sp,
+                        color = Color.Gray,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text("•", fontSize = 12.sp, color = Color.Gray)
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = AppColors.Info.copy(alpha = 0.1f)
                     ) {
                         Text(
-                            text = "Payment:",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray,
-                            fontWeight = FontWeight.Medium
+                            "${consolidatedBooking.timeSlots.size} slot${if (consolidatedBooking.timeSlots.size > 1) "s" else ""}",
+                            fontSize = 10.sp,
+                            color = AppColors.Info,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = Spacing.xs, vertical = 2.dp)
                         )
+                    }
+                }
+            }
+
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = AppColors.Error.copy(alpha = 0.15f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.small),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.xs)
+                ) {
+                    Text("₹", fontWeight = FontWeight.Bold, color = AppColors.Error)
+                    Text(
+                        text = consolidatedBooking.booking.dueAmount,
+                        color = AppColors.Error,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
+// FIXED: Student Report Card - Shows consolidated booking with multiple time slots
+@Composable
+fun EnhancedStudentReportCardFixed(
+    consolidatedBooking: ConsolidatedReportBooking,
+    timeSlots: List<String>
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+
+    val isExpiringSoon = isDateWithinDays(consolidatedBooking.booking.expiryDate, 7)
+    val isExpired = isDateExpired(consolidatedBooking.booking.expiryDate)
+
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "scale"
+    )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .scale(scale)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = { isExpanded = !isExpanded }
+            ),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isExpanded) 8.dp else 4.dp),
+        shape = RoundedCornerShape(20.dp)
+    ) {
+        Box(
+            modifier = Modifier.background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFFFAFAFA),
+                        Color.White
+                    )
+                )
+            )
+        ) {
+            Column(modifier = Modifier.padding(Spacing.large)) {
+                // Header - Always Visible
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = when {
+                                isExpired -> AppColors.Error.copy(alpha = 0.2f)
+                                isExpiringSoon -> AppColors.Warning.copy(alpha = 0.2f)
+                                else -> AppColors.Success.copy(alpha = 0.2f)
+                            },
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = consolidatedBooking.seatNumber.toString(),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    color = when {
+                                        isExpired -> AppColors.Error
+                                        isExpiringSoon -> AppColors.Warning
+                                        else -> AppColors.Success
+                                    }
+                                )
+                            }
+                        }
+
+                        Column {
+                            Text(
+                                text = consolidatedBooking.booking.occupiedBy,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Black
+                            )
+                            Text(
+                                "Seat ${consolidatedBooking.seatNumber}",
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = when {
+                            isExpired -> AppColors.Error
+                            isExpiringSoon -> AppColors.Warning
+                            else -> AppColors.Success
+                        }
+                    ) {
+                        Text(
+                            when {
+                                isExpired -> "EXPIRED"
+                                isExpiringSoon -> "EXPIRING"
+                                else -> "ACTIVE"
+                            },
+                            color = Color.White,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = Spacing.small, vertical = Spacing.xs)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(Spacing.medium))
+
+                // Time Slots Display - Compact
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    consolidatedBooking.timeSlots.take(2).forEach { (slotIndex, _) ->
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = if (paymentMode == "Online")
-                                Color(0xFFE8F5E9)
-                            else
-                                Color(0xFFE3F2FD)
+                            color = AppColors.Info.copy(alpha = 0.1f)
                         ) {
                             Text(
-                                text = paymentMode,
-                                color = if (paymentMode == "Online")
-                                    Color(0xFF2E7D32)
-                                else
-                                    Color(0xFF1976D2),
+                                timeSlots[slotIndex],
+                                color = AppColors.Info,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(horizontal = Spacing.small, vertical = Spacing.xs)
                             )
+                        }
+                    }
+
+                    if (consolidatedBooking.timeSlots.size > 2) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = AppColors.GoldPrimary.copy(alpha = 0.2f)
+                        ) {
+                            Text(
+                                "+${consolidatedBooking.timeSlots.size - 2}",
+                                color = AppColors.GoldDark,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(horizontal = Spacing.small, vertical = Spacing.xs)
+                            )
+                        }
+                    }
+                }
+
+                // Expanded Content
+                AnimatedVisibility(
+                    visible = isExpanded,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Column {
+                        Spacer(modifier = Modifier.height(Spacing.large))
+
+                        // Show all time slots when expanded
+                        if (consolidatedBooking.timeSlots.size > 2) {
+                            Text(
+                                text = "All Time Slots:",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(Spacing.xs))
+                            Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                                consolidatedBooking.timeSlots.forEach { (slotIndex, _) ->
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = AppColors.Info.copy(alpha = 0.1f)
+                                    ) {
+                                        Text(
+                                            timeSlots[slotIndex],
+                                            color = AppColors.Info,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.small)
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(Spacing.medium))
+                        }
+
+                        Divider(color = Color.LightGray.copy(alpha = 0.3f))
+                        Spacer(modifier = Modifier.height(Spacing.large))
+
+                        Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
+                            DetailRowReports("Bill No:", consolidatedBooking.booking.billNo)
+                            DetailRowReports("Mobile:", consolidatedBooking.booking.mobileNo)
+                            DetailRowReports("Subscription:", consolidatedBooking.booking.subscriptionType)
+                            DetailRowReports("DOA:", consolidatedBooking.booking.admissionDate)
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Expiry:", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                                Text(
+                                    consolidatedBooking.booking.expiryDate,
+                                    color = when {
+                                        isExpired -> AppColors.Error
+                                        isExpiringSoon -> AppColors.Warning
+                                        else -> Color.Black
+                                    },
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(Spacing.xs))
+                            Divider(color = Color.LightGray.copy(alpha = 0.3f))
+                            Spacer(modifier = Modifier.height(Spacing.xs))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Amount Paid:", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                                Text("₹${consolidatedBooking.booking.amountPaid}", color = AppColors.Success, fontWeight = FontWeight.Bold)
+                            }
+
+                            val hasDue = (consolidatedBooking.booking.dueAmount.toIntOrNull() ?: 0) > 0
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Due:", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                                    Text(
+                                        "₹${consolidatedBooking.booking.dueAmount}",
+                                        color = if (hasDue) AppColors.Error else Color.Black,
+                                        fontWeight = if (hasDue) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                    if (hasDue) {
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = AppColors.Error.copy(alpha = 0.15f)
+                                        ) {
+                                            Text(
+                                                "PENDING",
+                                                color = AppColors.Error,
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = Spacing.xs, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Payment:", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (consolidatedBooking.booking.paymentMode == "Online")
+                                        Color(0xFFE8F5E9) else Color(0xFFE3F2FD)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.xs),
+                                        horizontalArrangement = Arrangement.spacedBy(Spacing.xs)
+                                    ) {
+                                        Text(
+                                            if (consolidatedBooking.booking.paymentMode == "Online") "💳" else "💵",
+                                            fontSize = 12.sp
+                                        )
+                                        Text(
+                                            consolidatedBooking.booking.paymentMode,
+                                            color = if (consolidatedBooking.booking.paymentMode == "Online")
+                                                Color(0xFF2E7D32) else Color(0xFF1976D2),
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -745,58 +999,16 @@ fun StudentReportCard(
 }
 
 @Composable
-fun DetailRow(
-    label: String,
-    value: String,
-    valueColor: Color = Color.Black
-) {
+fun DetailRowReports(label: String, value: String) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray,
-            fontWeight = FontWeight.Medium
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            color = valueColor,
-            fontWeight = FontWeight.Normal
-        )
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Normal, color = Color.Black)
     }
 }
 
-// Data class to hold active booking information
-data class ActiveBookingInfo(
-    val seatNumber: Int,
-    val timeSlot: Int,
-    val booking: TimeSlotBooking
-)
-
-// Helper function to get all active bookings across all seats
-fun getAllActiveBookings(seatData: Map<String, SeatUi>): List<ActiveBookingInfo> {
-    val activeBookings = mutableListOf<ActiveBookingInfo>()
-
-    seatData.values.forEach { seat ->
-        seat.timeSlotBookings.forEach { (timeSlotIndex, booking) ->
-            activeBookings.add(
-                ActiveBookingInfo(
-                    seatNumber = seat.seatNumber,
-                    timeSlot = timeSlotIndex,
-                    booking = booking
-                )
-            )
-        }
-    }
-
-    return activeBookings
-}
-
-// Helper function to parse date for sorting
 fun parseDate(dateString: String): Long {
     return try {
         val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
