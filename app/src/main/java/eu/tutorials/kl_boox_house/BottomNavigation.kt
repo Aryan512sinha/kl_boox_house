@@ -28,6 +28,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
+object AppColors {
+    val GoldPrimary = Color(0xFFD6AE5E)
+    val GoldDark = Color(0xFFC7963E)
+}
+
 /**
  * Enhanced Bottom Navigation - Compact and modern
  * Icons only, no labels for cleaner look
