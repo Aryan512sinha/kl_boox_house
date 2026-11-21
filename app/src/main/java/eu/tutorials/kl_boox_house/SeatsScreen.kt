@@ -1,54 +1,41 @@
 package eu.tutorials.kl_boox_house
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.List
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SeatsScreen(
     seatData: MutableMap<String, SeatUi>,
-    onBackPressed: () -> Unit = {},
-    onNavigateToHome: () -> Unit = {},
-    onNavigateToMessages: () -> Unit = {},
-    onNavigateToReports: () -> Unit = {}
+    onBackPressed: () -> Unit = {}
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var showSearchResults by remember { mutableStateOf(false) }
-    var selectedViewMode by remember { mutableStateOf(0) }
+    var selectedViewMode by remember { mutableStateOf(0) } // 0 = Available Seats, 1 = All Seats
     var selectedSeat by remember { mutableStateOf<SeatUi?>(null) }
-    var selectedNavItem by remember { mutableStateOf(1) }
 
+    // Time slots
     val timeSlots = listOf(
         "6:00 AM - 10:00 AM",
         "10:00 AM - 2:00 PM",
@@ -59,290 +46,203 @@ fun SeatsScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        AppColors.LightBackground,
-                        Color(0xFFE8E8E8)
-                    )
-                )
-            )
+            .background(Color(0xFFF7F8FC))
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Enhanced Header
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            // Top App Bar
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = Color.Transparent,
-                shadowElevation = 12.dp
+                color = Color(0xFF101827),
+                shadowElevation = 8.dp
             ) {
-                Box(
-                    modifier = Modifier.background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                AppColors.DarkBackground,
-                                AppColors.DarkSecondary
-                            )
-                        )
-                    )
+                Column(
+                    modifier = Modifier.padding(16.dp)
                 ) {
-                    Column(modifier = Modifier.padding(Spacing.large)) {
-                        // Header Title
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Seat Management",
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = (-0.5).sp
-                                )
-                                Text(
-                                    text = "${seatData.size} total seats",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = Color.White.copy(alpha = 0.7f)
-                                )
-                            }
+                    // Header Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onBackPressed) {
+                            Icon(
+                                Icons.Default.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.White
+                            )
                         }
 
-                        Spacer(modifier = Modifier.height(Spacing.large))
+                        Text(
+                            text = "Seat Management",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
 
-                        // Enhanced Search Bar
-                        EnhancedSearchBarSeats(
-                            searchQuery = searchQuery,
-                            onQueryChange = {
+                        // Placeholder for symmetry
+                        Spacer(modifier = Modifier.width(48.dp))
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Bill Number Search Bar
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(28.dp),
+                        color = Color.White,
+                        shadowElevation = 4.dp
+                    ) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = {
                                 searchQuery = it
                                 showSearchResults = it.isNotEmpty()
                             },
-                            onClear = {
-                                searchQuery = ""
-                                showSearchResults = false
-                            }
-                        )
-
-                        Spacer(modifier = Modifier.height(Spacing.large))
-
-                        // Enhanced View Mode Toggle
-                        EnhancedViewModeToggle(
-                            selectedMode = selectedViewMode,
-                            onModeChange = { selectedViewMode = it }
-                        )
-                    }
-                }
-            }
-
-            // Content
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(bottom = 0.dp)
-            ) {
-                when {
-                    showSearchResults -> {
-                        SearchResultsSection(
-                            searchQuery = searchQuery,
-                            seatData = seatData,
-                            timeSlots = timeSlots,
-                            onSeatClick = { seat -> selectedSeat = seat }
-                        )
-                    }
-                    selectedViewMode == 0 -> {
-                        AvailableSeatsView(
-                            seatData = seatData,
-                            timeSlots = timeSlots,
-                            onSeatClick = { seat -> selectedSeat = seat }
-                        )
-                    }
-                    else -> {
-                        AllSeatsView(
-                            seatData = seatData,
-                            timeSlots = timeSlots,
-                            onSeatClick = { seat -> selectedSeat = seat }
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = {
+                                Text(
+                                    "Search by Bill Number",
+                                    color = Color.Gray,
+                                    fontSize = 14.sp
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Search,
+                                    contentDescription = "Search",
+                                    tint = Color(0xFFD6AE5E)
+                                )
+                            },
+                            trailingIcon = {
+                                if (searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = {
+                                        searchQuery = ""
+                                        showSearchResults = false
+                                    }) {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = "Clear",
+                                            tint = Color.Gray
+                                        )
+                                    }
+                                }
+                            },
+                            singleLine = true,
+                            colors = TextFieldDefaults.colors(
+                                unfocusedContainerColor = Color.White,
+                                focusedContainerColor = Color.White,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                cursorColor = Color(0xFFD6AE5E)
+                            ),
+                            shape = RoundedCornerShape(28.dp)
                         )
                     }
-                }
-            }
-        }
 
-        // Enhanced Bottom Navigation
-        EnhancedBottomNavigation(
-            selectedItem = selectedNavItem,
-            onItemSelected = { index ->
-                selectedNavItem = index
-                when (index) {
-                    0 -> onNavigateToHome()
-                    2 -> onNavigateToMessages()
-                    3 -> onNavigateToReports()
-                }
-            },
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
+                    Spacer(modifier = Modifier.height(16.dp))
 
-        // Enhanced Seat Detail Dialog (Full Screen)
-        selectedSeat?.let { seat ->
-            EnhancedSeatDetailDialog(
-                seat = seat,
-                timeSlots = timeSlots,
-                onDismiss = { selectedSeat = null }
-            )
-        }
-    }
-}
-
-@Composable
-fun EnhancedSearchBarSeats(
-    searchQuery: String,
-    onQueryChange: (String) -> Unit,
-    onClear: () -> Unit
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isFocused by interactionSource.collectIsPressedAsState()
-
-    val elevation by animateDpAsState(
-        targetValue = if (isFocused) 12.dp else 6.dp,
-        label = "elevation"
-    )
-
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        color = Color.White,
-        shadowElevation = elevation
-    ) {
-        Box(
-            modifier = Modifier.background(
-                Brush.horizontalGradient(
-                    colors = listOf(
-                        Color.White,
-                        AppColors.GoldLight.copy(alpha = 0.1f)
-                    )
-                )
-            )
-        ) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = onQueryChange,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = {
-                    Text(
-                        "Search by Bill Number",
-                        color = Color.Gray.copy(alpha = 0.6f),
-                        fontSize = 14.sp
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = AppColors.GoldPrimary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                },
-                trailingIcon = {
-                    AnimatedVisibility(
-                        visible = searchQuery.isNotEmpty(),
-                        enter = fadeIn() + scaleIn(),
-                        exit = fadeOut() + scaleOut()
+                    // View Mode Toggle
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        IconButton(onClick = onClear) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = "Clear",
-                                tint = Color.Gray
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { selectedViewMode = 0 },
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (selectedViewMode == 0)
+                                Color(0xFFD6AE5E)
+                            else
+                                Color.White.copy(alpha = 0.2f),
+                            border = BorderStroke(
+                                width = 2.dp,
+                                color = if (selectedViewMode == 0)
+                                    Color(0xFFD6AE5E)
+                                else
+                                    Color.White.copy(alpha = 0.3f)
+                            )
+                        ) {
+                            Text(
+                                text = "Available Seats",
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                textAlign = TextAlign.Center,
+                                color = if (selectedViewMode == 0) Color.Black else Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { selectedViewMode = 1 },
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (selectedViewMode == 1)
+                                Color(0xFFD6AE5E)
+                            else
+                                Color.White.copy(alpha = 0.2f),
+                            border = BorderStroke(
+                                width = 2.dp,
+                                color = if (selectedViewMode == 1)
+                                    Color(0xFFD6AE5E)
+                                else
+                                    Color.White.copy(alpha = 0.3f)
+                            )
+                        ) {
+                            Text(
+                                text = "All Seats",
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                textAlign = TextAlign.Center,
+                                color = if (selectedViewMode == 1) Color.Black else Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
                             )
                         }
                     }
-                },
-                singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    cursorColor = AppColors.GoldPrimary
-                ),
-                shape = RoundedCornerShape(32.dp),
-                interactionSource = interactionSource
-            )
+                }
+            }
+
+            // Main Content
+            if (showSearchResults) {
+                // Search Results
+                SearchResultsSection(
+                    searchQuery = searchQuery,
+                    seatData = seatData,
+                    timeSlots = timeSlots,
+                    onSeatClick = { seat ->
+                        selectedSeat = seat
+                    }
+                )
+            } else {
+                // Seats Grid or List
+                when (selectedViewMode) {
+                    0 -> AvailableSeatsView(
+                        seatData = seatData,
+                        timeSlots = timeSlots,
+                        onSeatClick = { seat ->
+                            selectedSeat = seat
+                        }
+                    )
+                    1 -> AllSeatsView(
+                        seatData = seatData,
+                        timeSlots = timeSlots,
+                        onSeatClick = { seat ->
+                            selectedSeat = seat
+                        }
+                    )
+                }
+            }
         }
-    }
-}
 
-@Composable
-fun EnhancedViewModeToggle(
-    selectedMode: Int,
-    onModeChange: (Int) -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.medium)
-    ) {
-        EnhancedToggleButton(
-            text = "Available Seats",
-            icon = "✓",
-            isSelected = selectedMode == 0,
-            onClick = { onModeChange(0) },
-            modifier = Modifier.weight(1f)
-        )
-
-        EnhancedToggleButton(
-            text = "All Seats",
-            icon = "📋",
-            isSelected = selectedMode == 1,
-            onClick = { onModeChange(1) },
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@Composable
-fun EnhancedToggleButton(
-    text: String,
-    icon: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val scale by animateFloatAsState(
-        targetValue = if (isSelected) 1.05f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "scale"
-    )
-
-    val backgroundColor by animateColorAsState(
-        targetValue = if (isSelected) AppColors.GoldPrimary else Color.White.copy(alpha = 0.2f),
-        label = "background"
-    )
-
-    Surface(
-        modifier = modifier
-            .scale(scale)
-            .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        color = backgroundColor,
-        border = BorderStroke(
-            width = 2.dp,
-            color = if (isSelected) AppColors.GoldPrimary else Color.White.copy(alpha = 0.3f)
-        ),
-        shadowElevation = if (isSelected) 8.dp else 0.dp
-    ) {
-        Row(
-            modifier = Modifier.padding(vertical = Spacing.medium),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = icon, fontSize = 16.sp)
-            Spacer(modifier = Modifier.width(Spacing.small))
-            Text(
-                text = text,
-                textAlign = TextAlign.Center,
-                color = if (isSelected) Color.Black else Color.White,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                fontSize = 14.sp
+        // Seat Detail Bottom Sheet
+        selectedSeat?.let { seat ->
+            SeatDetailBottomSheet(
+                seat = seat,
+                timeSlots = timeSlots,
+                onDismiss = { selectedSeat = null }
             )
         }
     }
@@ -366,53 +266,51 @@ fun SearchResultsSection(
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(Spacing.large),
-        verticalArrangement = Arrangement.spacedBy(Spacing.medium),
-        contentPadding = PaddingValues(bottom = 80.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Search Results",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = AppColors.GoldPrimary.copy(alpha = 0.2f)
-                ) {
-                    Text(
-                        text = "${searchResults.size} found",
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.xs)
-                    )
-                }
-            }
+            Text(
+                text = "Search Results (${searchResults.size})",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
         }
 
         if (searchResults.isEmpty()) {
             item {
-                EnhancedEmptyState(
-                    icon = "🔍",
-                    title = "No Results Found",
-                    message = "No bookings found with\nBill No: $searchQuery"
-                )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Text(
+                        text = "No bookings found with Bill No: $searchQuery",
+                        modifier = Modifier.padding(24.dp),
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
             }
         } else {
-            items(searchResults) { result ->
-                EnhancedSearchResultCard(result, timeSlots) { onSeatClick(result.seat) }
+            items(count = searchResults.size) { index ->
+                SearchResultCard(
+                    result = searchResults[index],
+                    timeSlots = timeSlots,
+                    onClick = { onSeatClick(searchResults[index].seat) }
+                )
             }
         }
     }
 }
 
 @Composable
-fun EnhancedSearchResultCard(
+fun SearchResultCard(
     result: SearchResult,
     timeSlots: List<String>,
     onClick: () -> Unit
@@ -420,132 +318,100 @@ fun EnhancedSearchResultCard(
     val isExpired = isDateExpired(result.booking.expiryDate)
     val isExpiringSoon = isDateWithinDays(result.booking.expiryDate, 7)
 
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.98f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "scale"
-    )
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .scale(scale)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = rememberRipple(color = AppColors.GoldPrimary),
-                onClick = onClick
-            ),
+            .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        shape = RoundedCornerShape(20.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Box(
-            modifier = Modifier.background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFFFAFAFA),
-                        Color.White
-                    )
-                )
-            )
+        Column(
+            modifier = Modifier.padding(16.dp)
         ) {
-            Column(modifier = Modifier.padding(Spacing.large)) {
+            // Header Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Seat ${result.seat.seatNumber}",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = when {
+                        isExpired -> Color.Red
+                        isExpiringSoon -> Color(0xFFFFA500)
+                        else -> Color.Green
+                    }
+                ) {
+                    Text(
+                        text = when {
+                            isExpired -> "EXPIRED"
+                            isExpiringSoon -> "EXPIRING SOON"
+                            else -> "ACTIVE"
+                        },
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Time Slot
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = Color(0xFFE3F2FD)
+            ) {
+                Text(
+                    text = timeSlots[result.slotIndex],
+                    color = Color(0xFF1976D2),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Divider(color = Color.LightGray.copy(alpha = 0.5f))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Student Details
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                DetailRowSeats(label = "Name:", value = result.booking.occupiedBy)
+                DetailRowSeats(label = "Bill No:", value = result.booking.billNo, valueColor = Color(0xFFD6AE5E))
+                DetailRowSeats(label = "Mobile:", value = result.booking.mobileNo)
+                DetailRowSeats(label = "DOA:", value = result.booking.admissionDate)
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.small),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = AppColors.GoldPrimary.copy(alpha = 0.2f),
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = result.seat.seatNumber.toString(),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp,
-                                    color = AppColors.GoldPrimary
-                                )
-                            }
-                        }
-
-                        Text(
-                            text = "Seat ${result.seat.seatNumber}",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black
-                        )
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = when {
-                            isExpired -> AppColors.Error
-                            isExpiringSoon -> AppColors.Warning
-                            else -> AppColors.Success
-                        }
-                    ) {
-                        Text(
-                            text = when {
-                                isExpired -> "EXPIRED"
-                                isExpiringSoon -> "EXPIRING"
-                                else -> "ACTIVE"
-                            },
-                            color = Color.White,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = Spacing.small, vertical = Spacing.xs)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(Spacing.medium))
-
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = AppColors.Info.copy(alpha = 0.1f)
-                ) {
                     Text(
-                        text = timeSlots[result.slotIndex],
-                        color = AppColors.Info,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.small),
-                        fontSize = 13.sp
+                        text = "Expiry:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray,
+                        fontWeight = FontWeight.Medium
                     )
-                }
-
-                Spacer(modifier = Modifier.height(Spacing.medium))
-                Divider(color = Color.LightGray.copy(alpha = 0.3f))
-                Spacer(modifier = Modifier.height(Spacing.medium))
-
-                Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
-                    DetailRowEnhanced("Name:", result.booking.occupiedBy)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("Bill No:", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = AppColors.GoldPrimary.copy(alpha = 0.15f)
-                        ) {
-                            Text(
-                                result.booking.billNo,
-                                color = AppColors.GoldPrimary,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = Spacing.small, vertical = 2.dp)
-                            )
-                        }
-                    }
-                    DetailRowEnhanced("Mobile:", result.booking.mobileNo)
+                    Text(
+                        text = result.booking.expiryDate,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = when {
+                            isExpired -> Color.Red
+                            isExpiringSoon -> Color(0xFFFFA500)
+                            else -> Color.Black
+                        },
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
@@ -559,13 +425,16 @@ fun AvailableSeatsView(
     onSeatClick: (SeatUi) -> Unit
 ) {
     val availableSeats = remember(seatData) {
-        seatData.values.filter { it.timeSlotBookings.size < 4 }.sortedBy { it.seatNumber }
+        seatData.values
+            .filter { seat -> seat.timeSlotBookings.size < 4 }
+            .sortedBy { it.seatNumber }
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(Spacing.large),
-        verticalArrangement = Arrangement.spacedBy(Spacing.medium),
-        contentPadding = PaddingValues(bottom = 80.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
             Row(
@@ -581,13 +450,14 @@ fun AvailableSeatsView(
                 )
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = AppColors.Success.copy(alpha = 0.2f)
+                    color = Color(0xFFD6AE5E).copy(alpha = 0.2f)
                 ) {
                     Text(
                         text = "${availableSeats.size} seats",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Black,
                         fontWeight = FontWeight.Bold,
-                        color = AppColors.Success,
-                        modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.xs)
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     )
                 }
             }
@@ -595,174 +465,130 @@ fun AvailableSeatsView(
 
         if (availableSeats.isEmpty()) {
             item {
-                EnhancedEmptyState(
-                    icon = "🔒",
-                    title = "All Seats Full",
-                    message = "All seats are currently occupied.\nCheck back later for availability."
-                )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Text(
+                        text = "All seats are fully occupied!",
+                        modifier = Modifier.padding(24.dp),
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
             }
         } else {
-            items(availableSeats.size) { index ->
-                AvailableSeatCard(availableSeats[index], timeSlots) {
-                    onSeatClick(availableSeats[index])
-                }
+            items(count = availableSeats.size) { index ->
+                AvailableSeatCard(
+                    seat = availableSeats[index],
+                    timeSlots = timeSlots,
+                    onClick = { onSeatClick(availableSeats[index]) }
+                )
             }
         }
     }
 }
 
 @Composable
-fun AvailableSeatCard(seat: SeatUi, timeSlots: List<String>, onClick: () -> Unit) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.98f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "scale"
-    )
-
+fun AvailableSeatCard(
+    seat: SeatUi,
+    timeSlots: List<String>,
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .scale(scale)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = rememberRipple(color = AppColors.GoldPrimary),
-                onClick = onClick
-            ),
+            .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        shape = RoundedCornerShape(20.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Box(
-            modifier = Modifier.background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFFFAFAFA),
-                        Color.White
-                    )
-                )
-            )
+        Column(
+            modifier = Modifier.padding(16.dp)
         ) {
-            Column(modifier = Modifier.padding(Spacing.large)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Seat ${seat.seatNumber}",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+
+                val availableSlots = 4 - seat.timeSlotBookings.size
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color.Green.copy(alpha = 0.15f)
                 ) {
+                    Text(
+                        text = "$availableSlots/4 Available",
+                        color = Color.Green,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Time Slots Status
+            Text(
+                text = "Time Slots:",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.Gray
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                timeSlots.forEachIndexed { index, timeSlot ->
+                    val isOccupied = seat.timeSlotBookings.containsKey(index)
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                color = if (isOccupied)
+                                    Color.Red.copy(alpha = 0.05f)
+                                else
+                                    Color.Green.copy(alpha = 0.05f),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = AppColors.GoldPrimary.copy(alpha = 0.2f),
-                            modifier = Modifier.size(48.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = seat.seatNumber.toString(),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 18.sp,
-                                    color = AppColors.GoldPrimary
-                                )
-                            }
-                        }
-
                         Text(
-                            text = "Seat ${seat.seatNumber}",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
+                            text = timeSlot,
+                            style = MaterialTheme.typography.bodySmall,
                             color = Color.Black
                         )
-                    }
 
-                    val availableSlots = 4 - seat.timeSlotBookings.size
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = AppColors.Success.copy(alpha = 0.15f)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.small),
-                            horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
-                            verticalAlignment = Alignment.CenterVertically
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = if (isOccupied)
+                                Color.Red.copy(alpha = 0.15f)
+                            else
+                                Color.Green.copy(alpha = 0.15f)
                         ) {
-                            Text("✓", fontSize = 14.sp, color = AppColors.Success)
                             Text(
-                                text = "$availableSlots/4 Available",
-                                color = AppColors.Success,
+                                text = if (isOccupied) "Occupied" else "Available",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (isOccupied) Color.Red else Color.Green,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
+                                fontSize = 11.sp
                             )
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(Spacing.large))
-
-                Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
-                    timeSlots.forEachIndexed { index, slot ->
-                        val isOccupied = seat.timeSlotBookings.containsKey(index)
-                        EnhancedTimeSlotIndicator(
-                            timeSlot = slot,
-                            isOccupied = isOccupied
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun EnhancedTimeSlotIndicator(
-    timeSlot: String,
-    isOccupied: Boolean
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        color = if (isOccupied)
-            AppColors.Error.copy(alpha = 0.05f)
-        else
-            AppColors.Success.copy(alpha = 0.05f)
-    ) {
-        Row(
-            modifier = Modifier.padding(Spacing.medium),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(Spacing.small),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = if (isOccupied) "🔴" else "🟢",
-                    fontSize = 12.sp
-                )
-                Text(
-                    text = timeSlot,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Black,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = if (isOccupied)
-                    AppColors.Error.copy(alpha = 0.15f)
-                else
-                    AppColors.Success.copy(alpha = 0.15f)
-            ) {
-                Text(
-                    if (isOccupied) "Occupied" else "Available",
-                    color = if (isOccupied) AppColors.Error else AppColors.Success,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 11.sp,
-                    modifier = Modifier.padding(horizontal = Spacing.small, vertical = Spacing.xs)
-                )
             }
         }
     }
@@ -779,9 +605,10 @@ fun AllSeatsView(
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(Spacing.large),
-        verticalArrangement = Arrangement.spacedBy(Spacing.medium),
-        contentPadding = PaddingValues(bottom = 80.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
             Row(
@@ -797,177 +624,280 @@ fun AllSeatsView(
                 )
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = AppColors.GoldPrimary.copy(alpha = 0.2f)
+                    color = Color(0xFFD6AE5E).copy(alpha = 0.2f)
                 ) {
                     Text(
                         text = "${allSeats.size} total",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Black,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.xs)
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     )
                 }
             }
         }
 
-        items(allSeats.size) { index ->
-            AllSeatCard(allSeats[index], timeSlots) { onSeatClick(allSeats[index]) }
+        items(count = allSeats.size) { index ->
+            AllSeatCard(
+                seat = allSeats[index],
+                timeSlots = timeSlots,
+                onClick = { onSeatClick(allSeats[index]) }
+            )
         }
     }
 }
 
 @Composable
-fun AllSeatCard(seat: SeatUi, timeSlots: List<String>, onClick: () -> Unit) {
+fun AllSeatCard(
+    seat: SeatUi,
+    timeSlots: List<String>,
+    onClick: () -> Unit
+) {
     val occupiedSlots = seat.timeSlotBookings.size
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.98f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "scale"
-    )
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .scale(scale)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = rememberRipple(color = AppColors.GoldPrimary),
-                onClick = onClick
-            ),
+            .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        shape = RoundedCornerShape(20.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Box(
-            modifier = Modifier.background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFFFAFAFA),
-                        Color.White
-                    )
-                )
-            )
+        Column(
+            modifier = Modifier.padding(16.dp)
         ) {
-            Column(modifier = Modifier.padding(Spacing.large)) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Seat ${seat.seatNumber}",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = when {
+                        occupiedSlots == 4 -> Color.Red.copy(alpha = 0.15f)
+                        occupiedSlots > 0 -> Color(0xFFFFA500).copy(alpha = 0.15f)
+                        else -> Color.Green.copy(alpha = 0.15f)
+                    }
+                ) {
+                    Text(
+                        text = "$occupiedSlots/4 Occupied",
+                        color = when {
+                            occupiedSlots == 4 -> Color.Red
+                            occupiedSlots > 0 -> Color(0xFFFFA500)
+                            else -> Color.Green
+                        },
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Time Slots Grid
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                timeSlots.forEachIndexed { index, timeSlot ->
+                    val booking = seat.timeSlotBookings[index]
+                    val isOccupied = booking != null
+
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (isOccupied)
+                            Color(0xFFFFEBEE)
+                        else
+                            Color(0xFFE8F5E9)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = timeSlot,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.Black,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                if (isOccupied && booking != null) {
+                                    Text(
+                                        text = booking.occupiedBy,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color.Gray,
+                                        fontSize = 11.sp
+                                    )
+                                }
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = if (isOccupied)
+                                    Color.Red.copy(alpha = 0.15f)
+                                else
+                                    Color.Green.copy(alpha = 0.15f)
+                            ) {
+                                Text(
+                                    text = if (isOccupied) "Occupied" else "Available",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (isOccupied) Color.Red else Color.Green,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SeatDetailBottomSheet(
+    seat: SeatUi,
+    timeSlots: List<String>,
+    onDismiss: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 24.dp, bottomEnd = 24.dp)
+    ) {
+        LazyColumn(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item {
+                // Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = when {
-                                occupiedSlots == 4 -> AppColors.Error.copy(alpha = 0.2f)
-                                occupiedSlots > 0 -> AppColors.Warning.copy(alpha = 0.2f)
-                                else -> AppColors.Success.copy(alpha = 0.2f)
-                            },
-                            modifier = Modifier.size(48.dp)
+                    Text(
+                        text = "Seat ${seat.seatNumber} Details",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold
+                    )
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = Color.Black
+                        )
+                    }
+                }
+            }
+
+            item {
+                val occupiedSlots = seat.timeSlotBookings.size
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFD6AE5E).copy(alpha = 0.1f)
+                ) {
+                    Text(
+                        text = "Occupied Slots: $occupiedSlots/4",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+            }
+
+            // Time Slot Details
+            items(4) { slotIndex ->
+                val booking = seat.timeSlotBookings[slotIndex]
+                val isOccupied = booking != null
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isOccupied)
+                            Color(0xFFFFEBEE)
+                        else
+                            Color(0xFFE8F5E9)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = timeSlots[slotIndex],
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Black
+                            )
+
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (isOccupied)
+                                    Color.Red.copy(alpha = 0.15f)
+                                else
+                                    Color.Green.copy(alpha = 0.15f)
+                            ) {
                                 Text(
-                                    text = seat.seatNumber.toString(),
+                                    text = if (isOccupied) "Occupied" else "Available",
+                                    color = if (isOccupied) Color.Red else Color.Green,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 18.sp,
-                                    color = when {
-                                        occupiedSlots == 4 -> AppColors.Error
-                                        occupiedSlots > 0 -> AppColors.Warning
-                                        else -> AppColors.Success
-                                    }
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                                 )
                             }
                         }
 
-                        Text(
-                            text = "Seat ${seat.seatNumber}",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black
-                        )
-                    }
+                        if (isOccupied && booking != null) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Divider(color = Color.Gray.copy(alpha = 0.3f))
+                            Spacer(modifier = Modifier.height(12.dp))
 
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = when {
-                            occupiedSlots == 4 -> AppColors.Error.copy(alpha = 0.15f)
-                            occupiedSlots > 0 -> AppColors.Warning.copy(alpha = 0.15f)
-                            else -> AppColors.Success.copy(alpha = 0.15f)
-                        }
-                    ) {
-                        Text(
-                            text = "$occupiedSlots/4 Occupied",
-                            color = when {
-                                occupiedSlots == 4 -> AppColors.Error
-                                occupiedSlots > 0 -> AppColors.Warning
-                                else -> AppColors.Success
-                            },
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.small)
-                        )
-                    }
-                }
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                DetailRowSeats(label = "Name:", value = booking.occupiedBy)
+                                DetailRowSeats(label = "Bill No:", value = booking.billNo)
+                                DetailRowSeats(label = "Mobile:", value = booking.mobileNo)
+                                DetailRowSeats(label = "Subscription:", value = booking.subscriptionType)
+                                DetailRowSeats(label = "DOA:", value = booking.admissionDate)
 
-                Spacer(modifier = Modifier.height(Spacing.large))
+                                val isExpired = isDateExpired(booking.expiryDate)
+                                val isExpiringSoon = isDateWithinDays(booking.expiryDate, 7)
 
-                Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
-                    timeSlots.forEachIndexed { index, slot ->
-                        val booking = seat.timeSlotBookings[index]
-                        val isOccupied = booking != null
-
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (isOccupied) Color(0xFFFFEBEE) else Color(0xFFE8F5E9)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(Spacing.medium),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(Spacing.small),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = if (isOccupied) "🔴" else "🟢",
-                                            fontSize = 12.sp
-                                        )
-                                        Text(
-                                            text = slot,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                    }
-                                    if (isOccupied && booking != null) {
-                                        Spacer(modifier = Modifier.height(Spacing.xs))
-                                        Text(
-                                            text = booking.occupiedBy,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = Color.Gray,
-                                            fontSize = 11.sp
-                                        )
-                                    }
-                                }
-
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = if (isOccupied)
-                                        AppColors.Error.copy(alpha = 0.15f)
-                                    else
-                                        AppColors.Success.copy(alpha = 0.15f)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(
-                                        if (isOccupied) "Occupied" else "Available",
-                                        color = if (isOccupied) AppColors.Error else AppColors.Success,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 11.sp,
-                                        modifier = Modifier.padding(horizontal = Spacing.small, vertical = Spacing.xs)
+                                        text = "Expiry:",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color.Gray
+                                    )
+                                    Text(
+                                        text = booking.expiryDate,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = when {
+                                            isExpired -> Color.Red
+                                            isExpiringSoon -> Color(0xFFFFA500)
+                                            else -> Color.Black
+                                        },
+                                        fontWeight = FontWeight.Bold
                                     )
                                 }
                             }
@@ -980,457 +910,33 @@ fun AllSeatCard(seat: SeatUi, timeSlots: List<String>, onClick: () -> Unit) {
 }
 
 @Composable
-fun EnhancedSeatDetailDialog(
-    seat: SeatUi,
-    timeSlots: List<String>,
-    onDismiss: () -> Unit
-) {
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.7f))
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onDismiss
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth(0.92f)
-                    .fillMaxHeight(0.85f)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = {}
-                    ),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 24.dp),
-                shape = RoundedCornerShape(28.dp)
-            ) {
-                Box(
-                    modifier = Modifier.background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xFFFAFAFA),
-                                Color.White
-                            )
-                        )
-                    )
-                ) {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        // Header
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            color = AppColors.DarkBackground,
-                            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(Spacing.xl),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = AppColors.GoldPrimary,
-                                        modifier = Modifier.size(48.dp)
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Text(
-                                                text = seat.seatNumber.toString(),
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 20.sp,
-                                                color = Color.Black
-                                            )
-                                        }
-                                    }
-
-                                    Column {
-                                        Text(
-                                            text = "Seat ${seat.seatNumber} Details",
-                                            style = MaterialTheme.typography.titleLarge,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White
-                                        )
-                                        val occupiedSlots = seat.timeSlotBookings.size
-                                        Text(
-                                            text = "$occupiedSlots/4 slots occupied",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = Color.White.copy(alpha = 0.7f)
-                                        )
-                                    }
-                                }
-
-                                EnhancedCloseButton(onClick = onDismiss)
-                            }
-                        }
-
-                        // Content
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(Spacing.xl),
-                            verticalArrangement = Arrangement.spacedBy(Spacing.medium)
-                        ) {
-                            items(4) { slotIndex ->
-                                val booking = seat.timeSlotBookings[slotIndex]
-                                val isOccupied = booking != null
-
-                                EnhancedSlotDetailCard(
-                                    timeSlot = timeSlots[slotIndex],
-                                    booking = booking,
-                                    isOccupied = isOccupied
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun EnhancedSlotDetailCard(
-    timeSlot: String,
-    booking: TimeSlotBooking?,
-    isOccupied: Boolean
-) {
-    val isExpired = booking?.let { isDateExpired(it.expiryDate) } ?: false
-    val isExpiringSoon = booking?.let { isDateWithinDays(it.expiryDate, 7) } ?: false
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isOccupied) Color(0xFFFFEBEE) else Color(0xFFE8F5E9)
-        ),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(modifier = Modifier.padding(Spacing.large)) {
-            // Time Slot Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.small),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = if (isOccupied) "⏰" else "✓",
-                        fontSize = 18.sp
-                    )
-                    Text(
-                        text = timeSlot,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
-                }
-
-                if (isOccupied && booking != null) {
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = when {
-                            isExpired -> AppColors.Error
-                            isExpiringSoon -> AppColors.Warning
-                            else -> AppColors.Success
-                        }
-                    ) {
-                        Text(
-                            text = when {
-                                isExpired -> "EXPIRED"
-                                isExpiringSoon -> "EXPIRING"
-                                else -> "ACTIVE"
-                            },
-                            color = Color.White,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = Spacing.small, vertical = Spacing.xs)
-                        )
-                    }
-                } else {
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = AppColors.Success.copy(alpha = 0.2f)
-                    ) {
-                        Text(
-                            text = "Available",
-                            color = AppColors.Success,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = Spacing.small, vertical = Spacing.xs)
-                        )
-                    }
-                }
-            }
-
-            if (isOccupied && booking != null) {
-                Spacer(modifier = Modifier.height(Spacing.medium))
-                Divider(color = Color.Gray.copy(alpha = 0.2f))
-                Spacer(modifier = Modifier.height(Spacing.medium))
-
-                // Student Name - Prominent
-                Text(
-                    text = booking.occupiedBy,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-
-                Spacer(modifier = Modifier.height(Spacing.medium))
-
-                // Details Grid
-                Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.medium)
-                    ) {
-                        InfoChip(
-                            icon = "🧾",
-                            label = "Bill No",
-                            value = booking.billNo,
-                            modifier = Modifier.weight(1f)
-                        )
-                        InfoChip(
-                            icon = "📱",
-                            label = "Mobile",
-                            value = booking.mobileNo,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-
-                    InfoChip(
-                        icon = "📅",
-                        label = "Subscription",
-                        value = booking.subscriptionType,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.medium)
-                    ) {
-                        InfoChip(
-                            icon = "📆",
-                            label = "DOA",
-                            value = booking.admissionDate,
-                            modifier = Modifier.weight(1f)
-                        )
-                        InfoChip(
-                            icon = "⏰",
-                            label = "Expiry",
-                            value = booking.expiryDate,
-                            modifier = Modifier.weight(1f),
-                            valueColor = when {
-                                isExpired -> AppColors.Error
-                                isExpiringSoon -> AppColors.Warning
-                                else -> Color.Black
-                            }
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(Spacing.xs))
-                    Divider(color = Color.Gray.copy(alpha = 0.2f))
-                    Spacer(modifier = Modifier.height(Spacing.xs))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.medium)
-                    ) {
-                        Surface(
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            color = AppColors.Success.copy(alpha = 0.1f)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(Spacing.medium),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "💰 Paid",
-                                    fontSize = 12.sp,
-                                    color = Color.Gray
-                                )
-                                Text(
-                                    text = "₹${booking.amountPaid}",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = AppColors.Success
-                                )
-                            }
-                        }
-
-                        Surface(
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            color = if ((booking.dueAmount.toIntOrNull() ?: 0) > 0)
-                                AppColors.Error.copy(alpha = 0.1f)
-                            else
-                                Color(0xFFF5F5F5)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(Spacing.medium),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "📌 Due",
-                                    fontSize = 12.sp,
-                                    color = Color.Gray
-                                )
-                                Text(
-                                    text = "₹${booking.dueAmount}",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if ((booking.dueAmount.toIntOrNull() ?: 0) > 0)
-                                        AppColors.Error
-                                    else
-                                        Color.Gray
-                                )
-                            }
-                        }
-                    }
-
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (booking.paymentMode == "Online")
-                            Color(0xFFE8F5E9)
-                        else
-                            Color(0xFFE3F2FD)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(Spacing.medium),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = if (booking.paymentMode == "Online") "💳" else "💵",
-                                fontSize = 16.sp
-                            )
-                            Spacer(modifier = Modifier.width(Spacing.small))
-                            Text(
-                                text = "Payment: ${booking.paymentMode}",
-                                fontWeight = FontWeight.Bold,
-                                color = if (booking.paymentMode == "Online")
-                                    Color(0xFF2E7D32)
-                                else
-                                    Color(0xFF1976D2)
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun InfoChip(
-    icon: String,
+fun DetailRowSeats(
     label: String,
     value: String,
-    modifier: Modifier = Modifier,
     valueColor: Color = Color.Black
 ) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        color = Color(0xFFF5F5F5)
-    ) {
-        Column(
-            modifier = Modifier.padding(Spacing.medium)
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(text = icon, fontSize = 12.sp)
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray,
-                    fontSize = 11.sp
-                )
-            }
-            Spacer(modifier = Modifier.height(Spacing.xs))
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                color = valueColor
-            )
-        }
-    }
-}
-
-@Composable
-fun EnhancedEmptyState(
-    icon: String,
-    title: String,
-    message: String
-) {
-    Card(
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(20.dp)
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(Spacing.xxl * 2),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Surface(
-                modifier = Modifier.size(80.dp),
-                shape = CircleShape,
-                color = AppColors.GoldPrimary.copy(alpha = 0.1f)
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Text(
-                        text = icon,
-                        fontSize = 36.sp
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(Spacing.large))
-
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.small))
-
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
-                textAlign = TextAlign.Center,
-                lineHeight = 20.sp
-            )
-        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.Gray
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            color = valueColor,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 
-data class SearchResult(val seat: SeatUi, val slotIndex: Int, val booking: TimeSlotBooking)
+// Data class for search results
+data class SearchResult(
+    val seat: SeatUi,
+    val slotIndex: Int,
+    val booking: TimeSlotBooking
+)

@@ -16,17 +16,21 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // 🔥 FIREBASE TEST
         val db = FirebaseFirestore.getInstance()
         db.collection("force_test")
             .add(mapOf("from" to "MainActivity"))
-            .addOnSuccessListener { Log.d("FIREBASE", "DATA SAVED SUCCESSFULLY") }
-            .addOnFailureListener { Log.e("FIREBASE", "SAVE FAILED", it) }
+            .addOnSuccessListener {
+                Log.d("FIREBASE", "DATA SAVED SUCCESSFULLY")
+            }
+            .addOnFailureListener {
+                Log.e("FIREBASE", "SAVE FAILED", it)
+            }
 
         setContent {
             Surface(
@@ -41,11 +45,13 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun MyApp() {
         val navController = rememberNavController()
+
+        // Shared seat data across screens
         val seatData = remember { mutableStateMapOf<String, SeatUi>() }
 
-        // Initialize seats and start Firebase listener
+        // 🔥 FIX: Initialize Firebase listener ONCE when app starts
         LaunchedEffect(Unit) {
-            // Initialize all 57 seats
+            // Initialize all 57 seats first (so UI doesn't break)
             for (i in 1..57) {
                 if (!seatData.containsKey("seat_$i")) {
                     seatData["seat_$i"] = SeatUi(
@@ -55,80 +61,41 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            // Start Firebase listener with expiry filtering built in
+            // 🔥 CRITICAL: Start listening to Firebase updates
             FirestoreRepository.listenToSeats { firebaseSeats ->
-                Log.d("FIREBASE_SYNC", "Listener triggered! Received ${firebaseSeats.size} seats")
+                Log.d("FIREBASE_SYNC", "Received ${firebaseSeats.size} seats from Firebase")
 
-                firebaseSeats.forEach { (key, updatedSeat) ->
-                    // Filter out expired slots BEFORE storing in seatData
-                    val filteredBookings = updatedSeat.timeSlotBookings
-                        .filter { (_, booking) -> !isDateExpired(booking.expiryDate) }
-                        .toMutableMap()
+                // Update seatData with Firebase data
+                seatData.clear()
 
-                    seatData[key] = updatedSeat.copy(timeSlotBookings = filteredBookings)
-
-                    // Delete expired slots from Firebase
-                    updatedSeat.timeSlotBookings.forEach { (slotIndex, booking) ->
-                        if (isDateExpired(booking.expiryDate)) {
-                            Log.d("FIREBASE_SYNC", "Auto-deleting expired slot $slotIndex for seat ${updatedSeat.seatNumber}")
-                            FirestoreRepository.deleteBooking(
-                                seatNumber = updatedSeat.seatNumber,
-                                slotIndex = slotIndex,
-                                onSuccess = {
-                                    Log.d("FIREBASE_SYNC", "Deleted expired: seat ${updatedSeat.seatNumber}, slot $slotIndex")
-                                },
-                                onFailure = { e ->
-                                    Log.e("FIREBASE_SYNC", "Failed to delete expired slot", e)
-                                }
-                            )
-                        }
-                    }
-                }
-
-                // Reset seats not present in Firebase
+                // Re-initialize all 57 seats
                 for (i in 1..57) {
-                    val seatKey = "seat_$i"
-                    if (!firebaseSeats.containsKey(seatKey) && seatData.containsKey(seatKey)) {
-                        seatData[seatKey] = SeatUi(
-                            seatNumber = i,
-                            timeSlotBookings = mutableMapOf()
-                        )
-                    }
+                    seatData["seat_$i"] = firebaseSeats["seat_$i"] ?: SeatUi(
+                        seatNumber = i,
+                        timeSlotBookings = mutableMapOf()
+                    )
                 }
-
-                Log.d("FIREBASE_SYNC", "Sync complete. Seat count: ${seatData.size}")
-            }
-        }
-
-        // Periodic expired booking cleanup (backup safety net)
-        LaunchedEffect(Unit) {
-            delay(5000) // Wait longer for Firebase to fully populate
-            Log.d("AUTO_DELETE", "Running initial expired bookings check...")
-            removeExpiredBookings(seatData)
-
-            while (true) {
-                delay(60000)
-                Log.d("AUTO_DELETE", "Running scheduled expired bookings check...")
-                removeExpiredBookings(seatData)
             }
         }
 
         NavHost(navController = navController, startDestination = "loginpage") {
             composable(route = "loginpage") {
-                LoginPage { navController.navigate("mainscreen") }
+                LoginPage {
+                    navController.navigate("mainscreen")
+                }
             }
 
             composable(route = "mainscreen") {
                 MainScreen(
                     seatData = seatData,
                     onNavigateToReports = {
-                        navController.navigate("reports") { popUpTo("mainscreen") }
+                        navController.navigate("reports")
                     },
                     onNavigateToSeats = {
-                        navController.navigate("seats") { popUpTo("mainscreen") }
+                        navController.navigate("seats")
                     },
                     onNavigateToMessages = {
-                        navController.navigate("messages") { popUpTo("mainscreen") }
+                        navController.navigate("messages")
                     }
                 )
             }
@@ -136,17 +103,8 @@ class MainActivity : ComponentActivity() {
             composable(route = "reports") {
                 ReportsScreen(
                     seatData = seatData,
-                    onBackPressed = { navController.popBackStack() },
-                    onNavigateToHome = {
-                        navController.navigate("mainscreen") {
-                            popUpTo("mainscreen") { inclusive = true }
-                        }
-                    },
-                    onNavigateToSeats = {
-                        navController.navigate("seats") { popUpTo("mainscreen") }
-                    },
-                    onNavigateToMessages = {
-                        navController.navigate("messages") { popUpTo("mainscreen") }
+                    onBackPressed = {
+                        navController.popBackStack()
                     }
                 )
             }
@@ -154,17 +112,8 @@ class MainActivity : ComponentActivity() {
             composable(route = "seats") {
                 SeatsScreen(
                     seatData = seatData,
-                    onBackPressed = { navController.popBackStack() },
-                    onNavigateToHome = {
-                        navController.navigate("mainscreen") {
-                            popUpTo("mainscreen") { inclusive = true }
-                        }
-                    },
-                    onNavigateToMessages = {
-                        navController.navigate("messages") { popUpTo("mainscreen") }
-                    },
-                    onNavigateToReports = {
-                        navController.navigate("reports") { popUpTo("mainscreen") }
+                    onBackPressed = {
+                        navController.popBackStack()
                     }
                 )
             }
@@ -172,17 +121,8 @@ class MainActivity : ComponentActivity() {
             composable(route = "messages") {
                 MessagesScreen(
                     seatData = seatData,
-                    onBackPressed = { navController.popBackStack() },
-                    onNavigateToHome = {
-                        navController.navigate("mainscreen") {
-                            popUpTo("mainscreen") { inclusive = true }
-                        }
-                    },
-                    onNavigateToSeats = {
-                        navController.navigate("seats") { popUpTo("mainscreen") }
-                    },
-                    onNavigateToReports = {
-                        navController.navigate("reports") { popUpTo("mainscreen") }
+                    onBackPressed = {
+                        navController.popBackStack()
                     }
                 )
             }
