@@ -116,7 +116,7 @@ fun MessagesScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
+            .background(Color(0xFFF7F8FC))
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
@@ -124,7 +124,7 @@ fun MessagesScreen(
             // Header
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = Color(0xFF2C2C2C),
+                color = Color(0xFF101827),
                 shadowElevation = 8.dp
             ) {
                 Row(
@@ -147,7 +147,7 @@ fun MessagesScreen(
                     Icon(
                         Icons.Default.Email,
                         contentDescription = "Messages",
-                        tint = Color(0xFFFFD700),
+                        tint = Color(0xFFD6AE5E),
                         modifier = Modifier.size(28.dp)
                     )
 
@@ -344,7 +344,7 @@ fun ExpiringBookingCard(booking: ExpiringBooking) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                color = Color(0xFFF5F5F5)
+                color = Color(0xFFF7F8FC)
             ) {
                 Column(
                     modifier = Modifier.padding(12.dp),

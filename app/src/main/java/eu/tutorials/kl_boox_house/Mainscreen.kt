@@ -175,7 +175,7 @@ fun MainScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF808080)) // Grey background via Compose
+            .background(Color(0xFF101827))
     ) {
         val engine = rememberEngine()
         val modelLoader = rememberModelLoader(engine)
@@ -316,7 +316,7 @@ fun MainScreen(
                 Surface(
                     modifier = Modifier.size(50.dp),
                     shape = CircleShape,
-                    color = Color(0xFFFFD700),
+                    color = Color(0xFFD6AE5E),
                     shadowElevation = 4.dp
                 ) {
                     Box(
@@ -374,7 +374,7 @@ fun MainScreen(
                         Icon(
                             Icons.Default.Search,
                             contentDescription = "Search",
-                            tint = Color(0xFFFFD700)
+                            tint = Color(0xFFD6AE5E)
                         )
                     },
                     trailingIcon = {
@@ -398,7 +398,7 @@ fun MainScreen(
                         focusedContainerColor = Color.White,
                         unfocusedIndicatorColor = Color.Transparent,
                         focusedIndicatorColor = Color.Transparent,
-                        cursorColor = Color(0xFFFFD700)
+                        cursor                        color = Color(0xFFD6AE5E)
                     ),
                     shape = RoundedCornerShape(28.dp)
                 )
@@ -538,7 +538,7 @@ fun MainScreen(
                         val occupiedSlots = seat.timeSlotBookings.size
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFFFFD700).copy(alpha = 0.1f)
+                            color = Color(0xFFD6AE5E).copy(alpha = 0.1f)
                         ) {
                             Text(
                                 text = "Occupied Slots: $occupiedSlots/4",
@@ -665,13 +665,13 @@ fun MainScreen(
                                             ),
                                         shape = RoundedCornerShape(12.dp),
                                         color = if (selectedSubscription == index)
-                                            Color(0xFFFFD700).copy(alpha = 0.2f)
+                                            Color(0xFFD6AE5E).copy(alpha = 0.2f)
                                         else
                                             Color.LightGray.copy(alpha = 0.1f),
                                         border = BorderStroke(
                                             width = 2.dp,
                                             color = if (selectedSubscription == index)
-                                                Color(0xFFFFD700)
+                                                Color(0xFFD6AE5E)
                                             else
                                                 Color.LightGray.copy(alpha = 0.3f)
                                         )
@@ -800,13 +800,13 @@ fun MainScreen(
                                             ),
                                         shape = RoundedCornerShape(12.dp),
                                         color = if (selectedPaymentMode == index)
-                                            Color(0xFFFFD700).copy(alpha = 0.2f)
+                                            Color(0xFFD6AE5E).copy(alpha = 0.2f)
                                         else
                                             Color.LightGray.copy(alpha = 0.1f),
                                         border = BorderStroke(
                                             width = 2.dp,
                                             color = if (selectedPaymentMode == index)
-                                                Color(0xFFFFD700)
+                                                Color(0xFFD6AE5E)
                                             else
                                                 Color.LightGray.copy(alpha = 0.3f)
                                         )
@@ -1132,11 +1132,11 @@ fun MainScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth(),
-            color = Color(0xFF2C2C2C),
+            color = Color(0xFF101827),
             shadowElevation = 24.dp
         ) {
             NavigationBar(
-                containerColor = Color(0xFF2C2C2C),
+                containerColor = Color(0xFF101827),
                 contentColor = Color.White,
                 tonalElevation = 8.dp,
                 modifier = Modifier.height(70.dp)
@@ -1160,8 +1160,8 @@ fun MainScreen(
                     selected = selectedNavItem == 0,
                     onClick = { selectedNavItem = 0 },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color(0xFFFFD700),
-                        selectedTextColor = Color(0xFFFFD700),
+                        selectedIconColor = Color(0xFFD6AE5E),
+                        selectedTextColor = Color(0xFFD6AE5E),
                         unselectedIconColor = Color.White.copy(alpha = 0.6f),
                         unselectedTextColor = Color.White.copy(alpha = 0.6f),
                         indicatorColor = Color(0xFF444444)
@@ -1190,8 +1190,8 @@ fun MainScreen(
                         onNavigateToSeats()  // <-- Add this line
                     },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color(0xFFFFD700),
-                        selectedTextColor = Color(0xFFFFD700),
+                        selectedIconColor = Color(0xFFD6AE5E),
+                        selectedTextColor = Color(0xFFD6AE5E),
                         unselectedIconColor = Color.White.copy(alpha = 0.6f),
                         unselectedTextColor = Color.White.copy(alpha = 0.6f),
                         indicatorColor = Color(0xFF444444)
@@ -1218,8 +1218,8 @@ fun MainScreen(
                     onClick = { selectedNavItem = 2
                         onNavigateToMessages() },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color(0xFFFFD700),
-                        selectedTextColor = Color(0xFFFFD700),
+                        selectedIconColor = Color(0xFFD6AE5E),
+                        selectedTextColor = Color(0xFFD6AE5E),
                         unselectedIconColor = Color.White.copy(alpha = 0.6f),
                         unselectedTextColor = Color.White.copy(alpha = 0.6f),
                         indicatorColor = Color(0xFF444444)
@@ -1248,8 +1248,8 @@ fun MainScreen(
                         onNavigateToReports()
                     },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color(0xFFFFD700),
-                        selectedTextColor = Color(0xFFFFD700),
+                        selectedIconColor = Color(0xFFD6AE5E),
+                        selectedTextColor = Color(0xFFD6AE5E),
                         unselectedIconColor = Color.White.copy(alpha = 0.6f),
                         unselectedTextColor = Color.White.copy(alpha = 0.6f),
                         indicatorColor = Color(0xFF444444)

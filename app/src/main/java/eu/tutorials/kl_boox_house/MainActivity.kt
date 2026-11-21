@@ -16,6 +16,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
+import eu.tutorials.kl_boox_house.ui.theme.Kl_boox_houseTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,11 +34,13 @@ class MainActivity : ComponentActivity() {
             }
 
         setContent {
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.background
-            ) {
-                MyApp()
+            Kl_boox_houseTheme(dynamicColor = false) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    MyApp()
+                }
             }
         }
     }

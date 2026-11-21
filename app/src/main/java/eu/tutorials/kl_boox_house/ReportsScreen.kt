@@ -59,6 +59,7 @@ fun ReportsScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color(0xFFF7F8FC))
             .padding(16.dp)
     ) {
         Column(
@@ -75,14 +76,14 @@ fun ReportsScreen(
                     Icon(
                         Icons.Default.ArrowBack,
                         contentDescription = "Back",
-                        tint = Color.White
+                        tint = Color(0xFF101827)
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Active Students Report",
                     style = MaterialTheme.typography.headlineMedium,
-                    color = Color.White,
+                    color = Color(0xFF101827),
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -114,15 +115,15 @@ fun ReportsScreen(
                         singleLine = true,
                         shape = RoundedCornerShape(10.dp),
                         colors = TextFieldDefaults.outlinedTextFieldColors(
-                            focusedBorderColor = Color(0xFFFFD700),
-                            cursorColor = Color(0xFFFFD700)
+                            focusedBorderColor = Color(0xFFD6AE5E),
+                            cursorColor = Color(0xFFD6AE5E)
                         ),
                         trailingIcon = {
                             IconButton(onClick = { showDatePicker = true }) {
                                 Icon(
                                     painter = painterResource(id = android.R.drawable.ic_menu_my_calendar),
                                     contentDescription = "Select Date",
-                                    tint = Color(0xFFFFD700)
+                                    tint = Color(0xFFD6AE5E)
                                 )
                             }
                         }
@@ -160,7 +161,7 @@ fun ReportsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFD700).copy(alpha = 0.9f)),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFD6AE5E).copy(alpha = 0.9f)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                 shape = RoundedCornerShape(12.dp)
             ) {
@@ -450,7 +451,7 @@ fun ReportsScreen(
                             showDatePicker = false
                         }
                     ) {
-                        Text("OK", color = Color(0xFFFFD700))
+                        Text("OK", color = Color(0xFFD6AE5E))
                     }
                 },
                 dismissButton = {
@@ -462,9 +463,9 @@ fun ReportsScreen(
                 DatePicker(
                     state = datePickerState,
                     colors = androidx.compose.material3.DatePickerDefaults.colors(
-                        selectedDayContainerColor = Color(0xFFFFD700),
-                        todayContentColor = Color(0xFFFFD700),
-                        todayDateBorderColor = Color(0xFFFFD700)
+                        selectedDayContainerColor = Color(0xFFD6AE5E),
+                        todayContentColor = Color(0xFFD6AE5E),
+                        todayDateBorderColor = Color(0xFFD6AE5E)
                     )
                 )
             }

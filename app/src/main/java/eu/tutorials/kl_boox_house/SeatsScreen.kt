@@ -46,7 +46,7 @@ fun SeatsScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
+            .background(Color(0xFFF7F8FC))
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
@@ -54,7 +54,7 @@ fun SeatsScreen(
             // Top App Bar
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = Color(0xFF2C2C2C),
+                color = Color(0xFF101827),
                 shadowElevation = 8.dp
             ) {
                 Column(
@@ -112,7 +112,7 @@ fun SeatsScreen(
                                 Icon(
                                     Icons.Default.Search,
                                     contentDescription = "Search",
-                                    tint = Color(0xFFFFD700)
+                                    tint = Color(0xFFD6AE5E)
                                 )
                             },
                             trailingIcon = {
@@ -135,7 +135,7 @@ fun SeatsScreen(
                                 focusedContainerColor = Color.White,
                                 unfocusedIndicatorColor = Color.Transparent,
                                 focusedIndicatorColor = Color.Transparent,
-                                cursorColor = Color(0xFFFFD700)
+                                cursorColor = Color(0xFFD6AE5E)
                             ),
                             shape = RoundedCornerShape(28.dp)
                         )
@@ -154,13 +154,13 @@ fun SeatsScreen(
                                 .clickable { selectedViewMode = 0 },
                             shape = RoundedCornerShape(12.dp),
                             color = if (selectedViewMode == 0)
-                                Color(0xFFFFD700)
+                                Color(0xFFD6AE5E)
                             else
                                 Color.White.copy(alpha = 0.2f),
                             border = BorderStroke(
                                 width = 2.dp,
                                 color = if (selectedViewMode == 0)
-                                    Color(0xFFFFD700)
+                                    Color(0xFFD6AE5E)
                                 else
                                     Color.White.copy(alpha = 0.3f)
                             )
@@ -181,13 +181,13 @@ fun SeatsScreen(
                                 .clickable { selectedViewMode = 1 },
                             shape = RoundedCornerShape(12.dp),
                             color = if (selectedViewMode == 1)
-                                Color(0xFFFFD700)
+                                Color(0xFFD6AE5E)
                             else
                                 Color.White.copy(alpha = 0.2f),
                             border = BorderStroke(
                                 width = 2.dp,
                                 color = if (selectedViewMode == 1)
-                                    Color(0xFFFFD700)
+                                    Color(0xFFD6AE5E)
                                 else
                                     Color.White.copy(alpha = 0.3f)
                             )
@@ -387,7 +387,7 @@ fun SearchResultCard(
             // Student Details
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 DetailRowSeats(label = "Name:", value = result.booking.occupiedBy)
-                DetailRowSeats(label = "Bill No:", value = result.booking.billNo, valueColor = Color(0xFFFFD700))
+                DetailRowSeats(label = "Bill No:", value = result.booking.billNo, valueColor = Color(0xFFD6AE5E))
                 DetailRowSeats(label = "Mobile:", value = result.booking.mobileNo)
                 DetailRowSeats(label = "DOA:", value = result.booking.admissionDate)
 
@@ -450,7 +450,7 @@ fun AvailableSeatsView(
                 )
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFFFD700).copy(alpha = 0.2f)
+                    color = Color(0xFFD6AE5E).copy(alpha = 0.2f)
                 ) {
                     Text(
                         text = "${availableSeats.size} seats",
@@ -624,7 +624,7 @@ fun AllSeatsView(
                 )
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFFFD700).copy(alpha = 0.2f)
+                    color = Color(0xFFD6AE5E).copy(alpha = 0.2f)
                 ) {
                     Text(
                         text = "${allSeats.size} total",
@@ -808,7 +808,7 @@ fun SeatDetailBottomSheet(
                 val occupiedSlots = seat.timeSlotBookings.size
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFFFD700).copy(alpha = 0.1f)
+                    color = Color(0xFFD6AE5E).copy(alpha = 0.1f)
                 ) {
                     Text(
                         text = "Occupied Slots: $occupiedSlots/4",
