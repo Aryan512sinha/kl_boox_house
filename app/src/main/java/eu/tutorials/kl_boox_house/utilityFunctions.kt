@@ -1,21 +1,10 @@
 package eu.tutorials.kl_boox_house
 
-import androidx.compose.ui.Modifier
-import androidx.compose.foundation.border
-import androidx.compose.ui.draw.rotate
 import io.github.sceneview.node.ModelNode
 import java.text.SimpleDateFormat
 import java.util.*
 
 data class SubscriptionType(val name: String, val days: Int)
-
-fun Modifier.border(width: androidx.compose.ui.unit.Dp, brush: androidx.compose.ui.graphics.Brush, shape: androidx.compose.ui.graphics.Shape): Modifier {
-    return this.border(androidx.compose.foundation.BorderStroke(width, brush), shape)
-}
-
-fun Modifier.rotate(degrees: Float): Modifier {
-    return androidx.compose.ui.draw.rotate(degrees)
-}
 
 fun getCurrentDate(): String {
     val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
