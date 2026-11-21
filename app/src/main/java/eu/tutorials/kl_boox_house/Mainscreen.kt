@@ -398,7 +398,7 @@ fun MainScreen(
                         focusedContainerColor = Color.White,
                         unfocusedIndicatorColor = Color.Transparent,
                         focusedIndicatorColor = Color.Transparent,
-                        cursor                        color = Color(0xFFD6AE5E)
+                        cursorColor = Color(0xFFD6AE5E)
                     ),
                     shape = RoundedCornerShape(28.dp)
                 )
