@@ -4,6 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.weight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -11,9 +13,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.getValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import android.util.Log
 
 class MainActivity : ComponentActivity() {
@@ -64,54 +68,81 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        NavHost(navController = navController, startDestination = "loginpage") {
-            composable(route = "loginpage") {
-                LoginPage {
-                    navController.navigate("mainscreen") {
-                        popUpTo("loginpage") { inclusive = true }
-                        launchSingleTop = true
+        val backStackEntry by navController.currentBackStackEntryAsState()
+        val currentRoute = backStackEntry?.destination?.route
+
+        fun navigateTo(route: String) {
+            if (currentRoute == route) return
+            navController.navigate(route) {
+                popUpTo("mainscreen") {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
+
+        Column(modifier = Modifier.fillMaxSize()) {
+            NavHost(
+                navController = navController,
+                startDestination = "loginpage",
+                modifier = Modifier.weight(1f)
+            ) {
+                composable(route = "loginpage") {
+                    LoginPage {
+                        navController.navigate("mainscreen") {
+                            popUpTo("loginpage") { inclusive = true }
+                            launchSingleTop = true
+                        }
                     }
+                }
+
+                composable(route = "mainscreen") {
+                    MainScreen(
+                        seatData = seatData,
+                        onNavigateToReports = { navigateTo("reports") },
+                        onNavigateToSeats = { navigateTo("seats") },
+                        onNavigateToMessages = { navigateTo("messages") }
+                    )
+                }
+
+                composable(route = "reports") {
+                    ReportsScreen(
+                        seatData = seatData,
+                        onBackPressed = { navigateTo("mainscreen") }
+                    )
+                }
+
+                composable(route = "seats") {
+                    SeatsScreen(
+                        seatData = seatData,
+                        onBackPressed = { navigateTo("mainscreen") }
+                    )
+                }
+
+                composable(route = "messages") {
+                    MessagesScreen(
+                        seatData = seatData,
+                        onBackPressed = { navigateTo("mainscreen") }
+                    )
                 }
             }
 
-            composable(route = "mainscreen") {
-                MainScreen(
-                    seatData = seatData,
-                    onNavigateToReports = {
-                        navController.navigate("reports")
+            if (currentRoute != "loginpage" && currentRoute != null) {
+                EnhancedBottomNavigation(
+                    selectedItem = when (currentRoute) {
+                        "seats" -> 1
+                        "messages" -> 2
+                        "reports" -> 3
+                        else -> 0
                     },
-                    onNavigateToSeats = {
-                        navController.navigate("seats")
-                    },
-                    onNavigateToMessages = {
-                        navController.navigate("messages")
-                    }
-                )
-            }
-
-            composable(route = "reports") {
-                ReportsScreen(
-                    seatData = seatData,
-                    onBackPressed = {
-                        navController.popBackStack()
-                    }
-                )
-            }
-
-            composable(route = "seats") {
-                SeatsScreen(
-                    seatData = seatData,
-                    onBackPressed = {
-                        navController.popBackStack()
-                    }
-                )
-            }
-
-            composable(route = "messages") {
-                MessagesScreen(
-                    seatData = seatData,
-                    onBackPressed = {
-                        navController.popBackStack()
+                    onItemSelected = { index ->
+                        when (index) {
+                            0 -> navigateTo("mainscreen")
+                            1 -> navigateTo("seats")
+                            2 -> navigateTo("messages")
+                            3 -> navigateTo("reports")
+                        }
                     }
                 )
             }

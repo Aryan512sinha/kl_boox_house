@@ -1156,20 +1156,6 @@ fun MainScreen(
             }
         }
 
-        EnhancedBottomNavigation(
-            selectedItem = selectedNavItem,
-            onItemSelected = { index ->
-                selectedNavItem = index
-                when (index) {
-                    1 -> onNavigateToSeats()
-                    2 -> onNavigateToMessages()
-                    3 -> onNavigateToReports()
-                }
-            },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-        )
     }
 }
 
