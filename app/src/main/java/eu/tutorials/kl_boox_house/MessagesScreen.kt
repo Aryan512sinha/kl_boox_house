@@ -124,8 +124,9 @@ fun MessagesScreen(
             // Header
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = Color(0xFF101827),
-                shadowElevation = 8.dp
+                color = Color(0xFF111827),
+                shadowElevation = 14.dp,
+                shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)
             ) {
                 Row(
                     modifier = Modifier
@@ -147,7 +148,7 @@ fun MessagesScreen(
                     Icon(
                         Icons.Default.Email,
                         contentDescription = "Messages",
-                        tint = Color(0xFFD6AE5E),
+                        tint = Color(0xFFCDA45D),
                         modifier = Modifier.size(28.dp)
                     )
 
@@ -163,7 +164,8 @@ fun MessagesScreen(
                         Text(
                             text = "${expiringBookings.size} booking(s) expiring soon",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.7f)
+                            color = Color(0xFFCDA45D),
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }

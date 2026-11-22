@@ -59,6 +59,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -175,7 +176,13 @@ fun MainScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF101827))
+            .background(
+                Brush.verticalGradient(
+                    0f to Color(0xFF111827),
+                    0.62f to Color(0xFF596579),
+                    1f to Color(0xFFE7EAF0)
+                )
+            )
     ) {
         val engine = rememberEngine()
         val modelLoader = rememberModelLoader(engine)
@@ -300,15 +307,17 @@ fun MainScreen(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = "Hi $adminName 👋",
+                        text = "Good to see you, $adminName",
                         style = MaterialTheme.typography.titleLarge,
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Welcome to the Library",
+                        text = "LIBRARY OVERVIEW",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.8f)
+                        color = Color(0xFFCDA45D),
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
                     )
                 }
 
@@ -316,7 +325,7 @@ fun MainScreen(
                 Surface(
                     modifier = Modifier.size(50.dp),
                     shape = CircleShape,
-                    color = Color(0xFFD6AE5E),
+                    color = Color(0xFFCDA45D),
                     shadowElevation = 4.dp
                 ) {
                     Box(
@@ -333,11 +342,11 @@ fun MainScreen(
                 }
             }
 
-            // Logo with background
+            // Library mark
             Surface(
                 modifier = Modifier.size(90.dp),
-                shape = RoundedCornerShape(16.dp),
-                color = Color(0xFF1A1A1A).copy(alpha = 0.9f),
+                shape = RoundedCornerShape(18.dp),
+                color = Color(0xFF111827).copy(alpha = 0.96f),
                 shadowElevation = 8.dp
             ) {
                 Image(
@@ -352,7 +361,7 @@ fun MainScreen(
             // Enhanced Search Bar
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(28.dp),
+                shape = RoundedCornerShape(18.dp),
                 color = Color.White,
                 shadowElevation = 8.dp
             ) {
@@ -374,7 +383,7 @@ fun MainScreen(
                         Icon(
                             Icons.Default.Search,
                             contentDescription = "Search",
-                            tint = Color(0xFFD6AE5E)
+                            tint = Color(0xFFCDA45D)
                         )
                     },
                     trailingIcon = {
@@ -398,7 +407,7 @@ fun MainScreen(
                         focusedContainerColor = Color.White,
                         unfocusedIndicatorColor = Color.Transparent,
                         focusedIndicatorColor = Color.Transparent,
-                        cursorColor = Color(0xFFD6AE5E)
+                        cursorColor = Color(0xFFCDA45D)
                     ),
                     shape = RoundedCornerShape(28.dp)
                 )
@@ -538,7 +547,7 @@ fun MainScreen(
                         val occupiedSlots = seat.timeSlotBookings.size
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFFD6AE5E).copy(alpha = 0.1f)
+                            color = Color(0xFFCDA45D).copy(alpha = 0.1f)
                         ) {
                             Text(
                                 text = "Occupied Slots: $occupiedSlots/4",
@@ -665,13 +674,13 @@ fun MainScreen(
                                             ),
                                         shape = RoundedCornerShape(12.dp),
                                         color = if (selectedSubscription == index)
-                                            Color(0xFFD6AE5E).copy(alpha = 0.2f)
+                                            Color(0xFFCDA45D).copy(alpha = 0.2f)
                                         else
                                             Color.LightGray.copy(alpha = 0.1f),
                                         border = BorderStroke(
                                             width = 2.dp,
                                             color = if (selectedSubscription == index)
-                                                Color(0xFFD6AE5E)
+                                                Color(0xFFCDA45D)
                                             else
                                                 Color.LightGray.copy(alpha = 0.3f)
                                         )
@@ -800,13 +809,13 @@ fun MainScreen(
                                             ),
                                         shape = RoundedCornerShape(12.dp),
                                         color = if (selectedPaymentMode == index)
-                                            Color(0xFFD6AE5E).copy(alpha = 0.2f)
+                                            Color(0xFFCDA45D).copy(alpha = 0.2f)
                                         else
                                             Color.LightGray.copy(alpha = 0.1f),
                                         border = BorderStroke(
                                             width = 2.dp,
                                             color = if (selectedPaymentMode == index)
-                                                Color(0xFFD6AE5E)
+                                                Color(0xFFCDA45D)
                                             else
                                                 Color.LightGray.copy(alpha = 0.3f)
                                         )
@@ -1127,136 +1136,20 @@ fun MainScreen(
             }
         }
 
-        // Enhanced Bottom Navigation Bar
-        Surface(
+        EnhancedBottomNavigation(
+            selectedItem = selectedNavItem,
+            onItemSelected = { index ->
+                selectedNavItem = index
+                when (index) {
+                    1 -> onNavigateToSeats()
+                    2 -> onNavigateToMessages()
+                    3 -> onNavigateToReports()
+                }
+            },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .fillMaxWidth(),
-            color = Color(0xFF101827),
-            shadowElevation = 24.dp
-        ) {
-            NavigationBar(
-                containerColor = Color(0xFF101827),
-                contentColor = Color.White,
-                tonalElevation = 8.dp,
-                modifier = Modifier.height(70.dp)
-            ) {
-                // Home
-                NavigationBarItem(
-                    icon = {
-                        Icon(
-                            if (selectedNavItem == 0) Icons.Outlined.Home else Icons.Outlined.Home,
-                            contentDescription = "Home",
-                            modifier = Modifier.size(28.dp)
-                        )
-                    },
-                    label = {
-                        Text(
-                            "Home",
-                            fontSize = 12.sp,
-                            fontWeight = if (selectedNavItem == 0) FontWeight.Bold else FontWeight.Normal
-                        )
-                    },
-                    selected = selectedNavItem == 0,
-                    onClick = { selectedNavItem = 0 },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color(0xFFD6AE5E),
-                        selectedTextColor = Color(0xFFD6AE5E),
-                        unselectedIconColor = Color.White.copy(alpha = 0.6f),
-                        unselectedTextColor = Color.White.copy(alpha = 0.6f),
-                        indicatorColor = Color(0xFF444444)
-                    )
-                )
-
-                // Seats
-                NavigationBarItem(
-                    icon = {
-                        Icon(
-                            Icons.Default.Search,
-                            contentDescription = "Seats",
-                            modifier = Modifier.size(28.dp)
-                        )
-                    },
-                    label = {
-                        Text(
-                            "Seats",
-                            fontSize = 12.sp,
-                            fontWeight = if (selectedNavItem == 1) FontWeight.Bold else FontWeight.Normal
-                        )
-                    },
-                    selected = selectedNavItem == 1,
-                    onClick = {
-                        selectedNavItem = 1
-                        onNavigateToSeats()  // <-- Add this line
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color(0xFFD6AE5E),
-                        selectedTextColor = Color(0xFFD6AE5E),
-                        unselectedIconColor = Color.White.copy(alpha = 0.6f),
-                        unselectedTextColor = Color.White.copy(alpha = 0.6f),
-                        indicatorColor = Color(0xFF444444)
-                    )
-                )
-
-                // Messages
-                NavigationBarItem(
-                    icon = {
-                        Icon(
-                            Icons.Outlined.Email,
-                            contentDescription = "Messages",
-                            modifier = Modifier.size(28.dp)
-                        )
-                    },
-                    label = {
-                        Text(
-                            "Messages",
-                            fontSize = 12.sp,
-                            fontWeight = if (selectedNavItem == 2) FontWeight.Bold else FontWeight.Normal
-                        )
-                    },
-                    selected = selectedNavItem == 2,
-                    onClick = { selectedNavItem = 2
-                        onNavigateToMessages() },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color(0xFFD6AE5E),
-                        selectedTextColor = Color(0xFFD6AE5E),
-                        unselectedIconColor = Color.White.copy(alpha = 0.6f),
-                        unselectedTextColor = Color.White.copy(alpha = 0.6f),
-                        indicatorColor = Color(0xFF444444)
-                    )
-                )
-
-                // Reports
-                NavigationBarItem(
-                    icon = {
-                        Icon(
-                            if (selectedNavItem == 3) Icons.Filled.List else Icons.Outlined.List,
-                            contentDescription = "Reports",
-                            modifier = Modifier.size(28.dp)
-                        )
-                    },
-                    label = {
-                        Text(
-                            "Reports",
-                            fontSize = 12.sp,
-                            fontWeight = if (selectedNavItem == 3) FontWeight.Bold else FontWeight.Normal
-                        )
-                    },
-                    selected = selectedNavItem == 3,
-                    onClick = {
-                        selectedNavItem = 3
-                        onNavigateToReports()
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color(0xFFD6AE5E),
-                        selectedTextColor = Color(0xFFD6AE5E),
-                        unselectedIconColor = Color.White.copy(alpha = 0.6f),
-                        unselectedTextColor = Color.White.copy(alpha = 0.6f),
-                        indicatorColor = Color(0xFF444444)
-                    )
-                )
-            }
-        }
+                .fillMaxWidth()
+        )
     }
 }
 
