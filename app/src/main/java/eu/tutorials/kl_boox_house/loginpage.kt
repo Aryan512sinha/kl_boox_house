@@ -60,8 +60,8 @@ fun LoginPage(navigationToMainScreen: () -> Unit) {
             .background(
                 Brush.verticalGradient(
                     0f to navy,
-                    0.46f to Color(0xFF1A263A),
-                    1f to Color(0xFFF1F3F7)
+                    0.55f to navy,
+                    1f to Color(0xFF111827)
                 )
             )
     ) {

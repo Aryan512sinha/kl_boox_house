@@ -60,7 +60,7 @@ fun ReportsScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF1F3F7))
+            .background(Color(0xFF111827))
             .padding(horizontal = 20.dp, vertical = 18.dp)
     ) {
         Column(
@@ -91,7 +91,7 @@ fun ReportsScreen(
                     Text(
                         text = "Active Students",
                         style = MaterialTheme.typography.headlineSmall,
-                        color = Color(0xFF111827),
+                        color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
                     Text(

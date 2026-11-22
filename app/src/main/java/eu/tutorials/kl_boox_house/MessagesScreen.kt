@@ -113,7 +113,7 @@ fun MessagesScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF7F8FC))
+            .background(Color(0xFF111827))
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
@@ -204,7 +204,7 @@ fun MessagesScreen(
                         Text(
                             text = "All Clear!",
                             style = MaterialTheme.typography.headlineSmall,
-                            color = Color.Black,
+                            color = Color.White,
                             fontWeight = FontWeight.Bold
                         )
 
@@ -213,7 +213,7 @@ fun MessagesScreen(
                         Text(
                             text = "No subscriptions expiring soon.\nYou'll be notified when bookings\nare about to expire.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray,
+                            color = Color.White.copy(alpha = 0.62f),
                             textAlign = TextAlign.Center,
                             lineHeight = 20.sp
                         )

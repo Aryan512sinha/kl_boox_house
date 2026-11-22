@@ -46,7 +46,7 @@ fun SeatsScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF7F8FC))
+            .background(Color(0xFF111827))
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
@@ -286,7 +286,7 @@ fun SearchResultsSection(
                 text = "Search Results (${searchResults.size})",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black,
+                color = Color.White,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
         }
@@ -456,7 +456,7 @@ fun AvailableSeatsView(
                     text = "Available Seats",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = Color.White
                 )
                 Surface(
                     shape = RoundedCornerShape(12.dp),
@@ -630,7 +630,7 @@ fun AllSeatsView(
                     text = "All Seats",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = Color.White
                 )
                 Surface(
                     shape = RoundedCornerShape(12.dp),

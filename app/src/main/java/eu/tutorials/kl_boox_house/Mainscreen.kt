@@ -2,6 +2,12 @@ package eu.tutorials.kl_boox_house
 
 import android.view.MotionEvent
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -49,8 +55,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -163,16 +169,21 @@ fun MainScreen(
     val availableSlots = (totalSlots - occupiedSlots).coerceAtLeast(0)
     val occupancyPercent = if (totalSlots == 0) 0 else occupiedSlots * 100 / totalSlots
 
+    val modelTransition = rememberInfiniteTransition(label = "libraryModelRotation")
+    val modelRotation by modelTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 18000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "modelRotation"
+    )
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    0f to Color(0xFF111827),
-                    0.62f to Color(0xFF596579),
-                    1f to Color(0xFFE7EAF0)
-                )
-            )
+            .background(Color(0xFF111827))
     ) {
         val engine = rememberEngine()
         val modelLoader = rememberModelLoader(engine)
@@ -199,17 +210,32 @@ fun MainScreen(
 
         var seatsInitialized by remember { mutableStateOf(false) }
         modelNode?.let { node ->
-            Scene(
-                modifier = Modifier.fillMaxSize(),
-                engine = engine,
-                modelLoader = modelLoader,
-                cameraNode = cameraNode,
-                cameraManipulator = rememberCameraManipulator(
-                    orbitHomePosition = Position(x = 0f, y = 5f, z = 10f),
-                    targetPosition = Position(x = 0f, y = -0.5f, z = 0f)
-                ),
-                childNodes = listOf(centerNode, node),
-                onTouchEvent = { motionEvent, hitResult ->
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 356.dp)
+                    .fillMaxWidth(0.92f)
+                    .height(330.dp)
+                    .clip(RoundedCornerShape(26.dp)),
+                shape = RoundedCornerShape(26.dp),
+                color = Color(0xFF1A263A),
+                shadowElevation = 16.dp,
+                border = BorderStroke(1.dp, Color(0xFFCDA45D).copy(alpha = 0.22f))
+            ) {
+                Scene(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(20.dp)),
+                    engine = engine,
+                    modelLoader = modelLoader,
+                    cameraNode = cameraNode,
+                    cameraManipulator = rememberCameraManipulator(
+                        orbitHomePosition = Position(x = 0f, y = 5f, z = 10f),
+                        targetPosition = Position(x = 0f, y = -0.5f, z = 0f)
+                    ),
+                    childNodes = listOf(centerNode, node),
+                    onTouchEvent = { motionEvent, hitResult ->
                     if (motionEvent.action == MotionEvent.ACTION_UP) {
                         val hitNode = hitResult?.node as? ModelNode
                         val nodeName = hitNode?.name
@@ -224,14 +250,16 @@ fun MainScreen(
                     }
                     true
                 },
-                onFrame = { frameTimeNanos ->
-                    if (!seatsInitialized) {
-                        node.findAndNameSeats()
-                        seatsInitialized = true
+                    onFrame = { frameTimeNanos ->
+                        centerNode.rotation = Rotation(y = modelRotation)
+                        cameraNode.lookAt(centerNode)
+                        if (!seatsInitialized) {
+                            node.findAndNameSeats()
+                            seatsInitialized = true
+                        }
                     }
-
-                }
-            )
+                )
+            }
         }
 
         // Enhanced Logo and Search Bar with Profile
