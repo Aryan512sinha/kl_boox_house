@@ -73,10 +73,7 @@ fun MessagesScreen(
 
     // Auto-remove bookings that are 2 days past expiry
     LaunchedEffect(Unit) {
-        while (true) {
-            kotlinx.coroutines.delay(60000) // Check every minute
-            removeBookingsTwoDaysPastExpiry(seatData)
-        }
+        removeBookingsTwoDaysPastExpiry(seatData)
     }
 
     // Get all expiring bookings (expiring within 1 day or already expired but within 2 days past expiry)

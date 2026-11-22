@@ -15,22 +15,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import android.util.Log
-import com.google.firebase.firestore.FirebaseFirestore
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // 🔥 FIREBASE TEST
-        val db = FirebaseFirestore.getInstance()
-        db.collection("force_test")
-            .add(mapOf("from" to "MainActivity"))
-            .addOnSuccessListener {
-                Log.d("FIREBASE", "DATA SAVED SUCCESSFULLY")
-            }
-            .addOnFailureListener {
-                Log.e("FIREBASE", "SAVE FAILED", it)
-            }
 
         setContent {
             Surface(
@@ -65,15 +53,13 @@ class MainActivity : ComponentActivity() {
             FirestoreRepository.listenToSeats { firebaseSeats ->
                 Log.d("FIREBASE_SYNC", "Received ${firebaseSeats.size} seats from Firebase")
 
-                // Update seatData with Firebase data
-                seatData.clear()
-
-                // Re-initialize all 57 seats
+                // Update only changed or missing seats; never rebuild the entire map.
                 for (i in 1..57) {
-                    seatData["seat_$i"] = firebaseSeats["seat_$i"] ?: SeatUi(
-                        seatNumber = i,
-                        timeSlotBookings = mutableMapOf()
-                    )
+                    val key = "seat_$i"
+                    val updated = firebaseSeats[key] ?: SeatUi(seatNumber = i, timeSlotBookings = mutableMapOf())
+                    if (seatData[key] != updated) {
+                        seatData[key] = updated
+                    }
                 }
             }
         }
@@ -81,7 +67,10 @@ class MainActivity : ComponentActivity() {
         NavHost(navController = navController, startDestination = "loginpage") {
             composable(route = "loginpage") {
                 LoginPage {
-                    navController.navigate("mainscreen")
+                    navController.navigate("mainscreen") {
+                        popUpTo("loginpage") { inclusive = true }
+                        launchSingleTop = true
+                    }
                 }
             }
 

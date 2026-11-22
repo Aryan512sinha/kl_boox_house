@@ -2,9 +2,6 @@ package eu.tutorials.kl_boox_house
 
 import android.view.MotionEvent
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -73,7 +70,6 @@ import io.github.sceneview.node.ModelNode
 import io.github.sceneview.rememberCameraManipulator
 import io.github.sceneview.rememberCameraNode
 import io.github.sceneview.rememberEngine
-import io.github.sceneview.rememberEnvironmentLoader
 import io.github.sceneview.rememberModelLoader
 import io.github.sceneview.rememberNode
 import java.text.SimpleDateFormat
@@ -126,10 +122,7 @@ fun MainScreen(
 
     // Auto-remove expired bookings
     LaunchedEffect(Unit) {
-        while (true) {
-            kotlinx.coroutines.delay(60000) // Check every minute
-            removeExpiredBookings(seatData)
-        }
+        removeExpiredBookings(seatData)
     }
 
     // Back button handler
@@ -186,7 +179,6 @@ fun MainScreen(
     ) {
         val engine = rememberEngine()
         val modelLoader = rememberModelLoader(engine)
-        val environmentLoader = rememberEnvironmentLoader(engine)
         val centerNode = rememberNode(engine)
 
         // Camera positioning for full model visibility
@@ -194,19 +186,6 @@ fun MainScreen(
             position = Position(x = 0f, y = 5f, z = 10f)
             lookAt(centerNode)
             centerNode.addChildNode(this)
-        }
-
-        var hasRotatedOnce by remember { mutableStateOf(false) }
-        val cameraRotation = remember { Animatable(0f) }
-
-        LaunchedEffect(Unit) {
-            if (!hasRotatedOnce) {
-                hasRotatedOnce = true
-                cameraRotation.animateTo(
-                    targetValue = 360f,
-                    animationSpec = tween(durationMillis = 6000, easing = LinearEasing)
-                )
-            }
         }
 
         var modelNode by remember { mutableStateOf<ModelNode?>(null) }
@@ -222,8 +201,6 @@ fun MainScreen(
         }
 
         var seatsInitialized by remember { mutableStateOf(false) }
-        var environmentReady by remember { mutableStateOf(false) }
-
         modelNode?.let { node ->
             Scene(
                 modifier = Modifier.fillMaxSize(),
@@ -235,7 +212,7 @@ fun MainScreen(
                     targetPosition = Position(x = 0f, y = -0.5f, z = 0f)
                 ),
                 childNodes = listOf(centerNode, node),
-                environment = environmentLoader.createHDREnvironment("brown_photostudio_02_4k.hdr")!!,
+                environment = null,
                 onTouchEvent = { motionEvent, hitResult ->
                     if (motionEvent.action == MotionEvent.ACTION_UP) {
                         val hitNode = hitResult?.node as? ModelNode
@@ -252,36 +229,11 @@ fun MainScreen(
                     true
                 },
                 onFrame = { frameTimeNanos ->
-                    if (cameraRotation.value < 360f) {
-                        centerNode.rotation = Rotation(y = cameraRotation.value)
-                        cameraNode.lookAt(centerNode)
-                    }
-
                     if (!seatsInitialized) {
                         node.findAndNameSeats()
                         seatsInitialized = true
                     }
 
-                    if (!environmentReady) {
-                        try {
-                            val sceneClass = this.javaClass
-                            val viewField = sceneClass.getDeclaredField("view")
-                            viewField.isAccessible = true
-                            val view = viewField.get(this)
-
-                            val viewClass = view.javaClass
-                            val sceneMethod = viewClass.getMethod("getScene")
-                            val scene = sceneMethod.invoke(view)
-
-                            val sceneObjClass = scene.javaClass
-                            val setSkyboxMethod = sceneObjClass.getMethod("setSkybox", com.google.android.filament.Skybox::class.java)
-                            setSkyboxMethod.invoke(scene, null)
-
-                            environmentReady = true
-                        } catch (e: Exception) {
-                            // Skybox removal failed, will retry next frame
-                        }
-                    }
                 }
             )
         }
