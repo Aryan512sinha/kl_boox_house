@@ -158,6 +158,11 @@ fun MainScreen(
         }
     }
 
+    val occupiedSlots = seatData.values.sumOf { it.timeSlotBookings.size }
+    val totalSlots = 57 * 4
+    val availableSlots = (totalSlots - occupiedSlots).coerceAtLeast(0)
+    val occupancyPercent = if (totalSlots == 0) 0 else occupiedSlots * 100 / totalSlots
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -184,10 +189,10 @@ fun MainScreen(
 
         LaunchedEffect(Unit) {
             modelNode = ModelNode(
-                modelInstance = modelLoader.createModelInstance("kl_boox_house6.glb"),
-                scaleToUnits = 3.5f
+                    modelInstance = modelLoader.createModelInstance("kl_boox_house6.glb"),
+                    scaleToUnits = 4.8f
             ).apply {
-                position = Position(x = 0f, y = -0.5f, z = 0f)
+                    position = Position(x = 0f, y = -1.0f, z = 0f)
                 rotation = Rotation(x = 0f, y = 0f, z = 0f)
             }
         }
@@ -285,21 +290,46 @@ fun MainScreen(
                 }
             }
 
-            // Library mark
-            Surface(
-                modifier = Modifier.size(90.dp),
-                shape = RoundedCornerShape(18.dp),
-                color = Color(0xFF111827).copy(alpha = 0.96f),
-                shadowElevation = 8.dp
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.library4),
-                    contentDescription = "Library Logo",
-                    modifier = Modifier.padding(10.dp)
-                )
+                Surface(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White.copy(alpha = 0.11f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp)) {
+                        Text("$availableSlots", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                        Text("AVAILABLE", color = Color(0xFFCDA45D), fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+                Surface(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White.copy(alpha = 0.11f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp)) {
+                        Text("$occupiedSlots", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                        Text("OCCUPIED", color = Color(0xFFF39A9A), fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+                Surface(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color(0xFFCDA45D),
+                    shadowElevation = 6.dp
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp)) {
+                        Text("$occupancyPercent%", color = Color(0xFF111827), fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                        Text("UTILIZATION", color = Color(0xFF5E4A2B), fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
 
             // Enhanced Search Bar
             Surface(
@@ -1075,6 +1105,53 @@ fun MainScreen(
                             }
                         }
                     }
+                }
+            }
+        }
+
+        Surface(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 88.dp)
+                .fillMaxWidth(0.86f),
+            shape = RoundedCornerShape(18.dp),
+            color = Color(0xFF111827).copy(alpha = 0.92f),
+            shadowElevation = 12.dp,
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 11.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        "FULL BUILDING",
+                        color = Color(0xFFCDA45D),
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                    Text(
+                        "57 seats • 4 time shifts",
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFF43C59E).copy(alpha = 0.16f)
+                ) {
+                    Text(
+                        "LIVE",
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        color = Color(0xFF69D8B3),
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
