@@ -2,12 +2,6 @@ package eu.tutorials.kl_boox_house
 
 import android.view.MotionEvent
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -169,17 +163,6 @@ fun MainScreen(
     val availableSlots = (totalSlots - occupiedSlots).coerceAtLeast(0)
     val occupancyPercent = if (totalSlots == 0) 0 else occupiedSlots * 100 / totalSlots
 
-    val modelTransition = rememberInfiniteTransition(label = "libraryModelRotation")
-    val modelRotation by modelTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 18000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "modelRotation"
-    )
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -201,26 +184,29 @@ fun MainScreen(
         LaunchedEffect(Unit) {
             modelNode = ModelNode(
                     modelInstance = modelLoader.createModelInstance("kl_boox_house6.glb"),
-                    scaleToUnits = 4.8f
+                    scaleToUnits = 5.8f
             ).apply {
                     position = Position(x = 0f, y = -1.0f, z = 0f)
-                rotation = Rotation(x = 0f, y = 0f, z = 0f)
+                rotation = Rotation(x = -8f, y = 32f, z = 0f)
             }
         }
 
-        var seatsInitialized by remember { mutableStateOf(false) }
+        LaunchedEffect(modelNode) {
+            modelNode?.findAndNameSeats()
+        }
+
         modelNode?.let { node ->
             Surface(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 356.dp)
+                    .padding(top = 344.dp)
                     .fillMaxWidth(0.92f)
-                    .height(330.dp)
+                    .height(300.dp)
                     .clip(RoundedCornerShape(26.dp)),
                 shape = RoundedCornerShape(26.dp),
-                color = Color(0xFF1A263A),
-                shadowElevation = 16.dp,
-                border = BorderStroke(1.dp, Color(0xFFCDA45D).copy(alpha = 0.22f))
+                color = Color(0xFF0E1626),
+                shadowElevation = 10.dp,
+                border = BorderStroke(1.dp, Color(0xFFCDA45D).copy(alpha = 0.18f))
             ) {
                 Scene(
                     modifier = Modifier
@@ -236,28 +222,30 @@ fun MainScreen(
                     ),
                     childNodes = listOf(centerNode, node),
                     onTouchEvent = { motionEvent, hitResult ->
-                    if (motionEvent.action == MotionEvent.ACTION_UP) {
-                        val hitNode = hitResult?.node as? ModelNode
-                        val nodeName = hitNode?.name
-                        if (nodeName?.startsWith("seat_") == true) {
-                            val seat = seatData[nodeName]
-                            if (seat != null) {
-                                selectedSeat = seat
-                                selectedTimeSlot = 0
-                                node.highlightSeat(seat.seatNumber)
+                        if (motionEvent.action == MotionEvent.ACTION_UP) {
+                            val hitNode = hitResult?.node as? ModelNode
+                            val nodeName = hitNode?.name
+                            if (nodeName?.startsWith("seat_") == true) {
+                                val seat = seatData[nodeName]
+                                if (seat != null) {
+                                    selectedSeat = seat
+                                    selectedTimeSlot = 0
+                                    node.highlightSeat(seat.seatNumber)
+                                }
                             }
                         }
+                        true
                     }
-                    true
-                },
-                    onFrame = { frameTimeNanos ->
-                        centerNode.rotation = Rotation(y = modelRotation)
-                        cameraNode.lookAt(centerNode)
-                        if (!seatsInitialized) {
-                            node.findAndNameSeats()
-                            seatsInitialized = true
-                        }
-                    }
+                )
+                Text(
+                    text = "DRAG TO ROTATE  ·  YZ / XZ",
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 12.dp),
+                    color = Color.White.copy(alpha = 0.58f),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
                 )
             }
         }

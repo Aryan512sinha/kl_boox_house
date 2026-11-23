@@ -3,6 +3,9 @@ package eu.tutorials.kl_boox_house
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
@@ -54,8 +57,6 @@ class MainActivity : ComponentActivity() {
 
             // 🔥 CRITICAL: Start listening to Firebase updates
             FirestoreRepository.listenToSeats { firebaseSeats ->
-                Log.d("FIREBASE_SYNC", "Received ${firebaseSeats.size} seats from Firebase")
-
                 // Update only changed or missing seats; never rebuild the entire map.
                 for (i in 1..57) {
                     val key = "seat_$i"
@@ -85,7 +86,11 @@ class MainActivity : ComponentActivity() {
             NavHost(
                 navController = navController,
                 startDestination = "loginpage",
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                enterTransition = { fadeIn(tween(120)) },
+                exitTransition = { fadeOut(tween(80)) },
+                popEnterTransition = { fadeIn(tween(120)) },
+                popExitTransition = { fadeOut(tween(80)) }
             ) {
                 composable(route = "loginpage") {
                     LoginPage {

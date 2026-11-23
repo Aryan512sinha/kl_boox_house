@@ -59,8 +59,6 @@ object FirestoreRepository {
     fun listenToSeats(
         onUpdate: (Map<String, SeatUi>) -> Unit
     ) {
-        Log.d("FIRESTORE_LISTEN", "🎧 Setting up real-time listener...")
-
         db.collection("seats")
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
@@ -73,8 +71,6 @@ object FirestoreRepository {
                     return@addSnapshotListener
                 }
 
-                Log.d("FIRESTORE_LISTEN", "📥 Listener triggered! Received ${snapshot.size()} documents")
-
                 val result = mutableMapOf<String, SeatUi>()
 
                 for (doc in snapshot.documents) {
@@ -83,8 +79,6 @@ object FirestoreRepository {
                         val slots = mutableMapOf<Int, TimeSlotBooking>()
 
                         val docData = doc.data ?: continue
-
-                        Log.d("FIRESTORE_LISTEN", "📄 Processing seat_$seatNumber")
 
                         // Loop through all fields looking for "slots.X"
                         for ((key, value) in docData) {
@@ -107,7 +101,6 @@ object FirestoreRepository {
                                     )
 
                                     slots[slotIndex] = booking
-                                    Log.d("FIRESTORE_PARSE", "   ✅ Slot $slotIndex: ${booking.occupiedBy}")
                                 } catch (e: Exception) {
                                     Log.e("FIRESTORE_PARSE", "   ❌ Failed to parse slot: $key", e)
                                 }
@@ -119,14 +112,11 @@ object FirestoreRepository {
                             timeSlotBookings = slots
                         )
 
-                        Log.d("FIRESTORE_SEAT", "✅ Seat $seatNumber → ${slots.size} bookings")
-
                     } catch (e: Exception) {
                         Log.e("FIRESTORE_DOC", "❌ Failed to process document: ${doc.id}", e)
                     }
                 }
 
-                Log.d("FIRESTORE_RESULT", "📤 Returning ${result.size} seats to UI")
                 onUpdate(result)
             }
     }
