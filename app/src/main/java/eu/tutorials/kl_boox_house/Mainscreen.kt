@@ -5,6 +5,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,8 +60,8 @@ import androidx.compose.ui.unit.sp
 import io.github.sceneview.Scene
 import io.github.sceneview.math.Position
 import io.github.sceneview.math.Rotation
+import io.github.sceneview.math.Scale
 import io.github.sceneview.node.ModelNode
-import io.github.sceneview.rememberCameraManipulator
 import io.github.sceneview.rememberCameraNode
 import io.github.sceneview.rememberEngine
 import io.github.sceneview.rememberModelLoader
@@ -162,6 +163,13 @@ fun MainScreen(
     val totalSlots = 57 * 4
     val availableSlots = (totalSlots - occupiedSlots).coerceAtLeast(0)
     val occupancyPercent = if (totalSlots == 0) 0 else occupiedSlots * 100 / totalSlots
+    var modelPitch by remember { mutableStateOf(-55f) }
+    var modelYaw by remember { mutableStateOf(32f) }
+    var modelScale by remember { mutableStateOf(7.5f) }
+    var lastTouchX by remember { mutableStateOf(0f) }
+    var lastTouchY by remember { mutableStateOf(0f) }
+    var lastPinchDistance by remember { mutableStateOf(0f) }
+    var modelWasDragged by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -174,7 +182,7 @@ fun MainScreen(
 
         // Camera positioning for full model visibility
         val cameraNode = rememberCameraNode(engine) {
-            position = Position(x = 0f, y = 5f, z = 10f)
+            position = Position(x = 0f, y = 10f, z = 14f)
             lookAt(centerNode)
             centerNode.addChildNode(this)
         }
@@ -184,10 +192,10 @@ fun MainScreen(
         LaunchedEffect(Unit) {
             modelNode = ModelNode(
                     modelInstance = modelLoader.createModelInstance("kl_boox_house6.glb"),
-                    scaleToUnits = 5.8f
+                    scaleToUnits = modelScale
             ).apply {
                     position = Position(x = 0f, y = -1.0f, z = 0f)
-                rotation = Rotation(x = -8f, y = 32f, z = 0f)
+                rotation = Rotation(x = modelPitch, y = modelYaw, z = 0f)
             }
         }
 
@@ -216,13 +224,43 @@ fun MainScreen(
                     engine = engine,
                     modelLoader = modelLoader,
                     cameraNode = cameraNode,
-                    cameraManipulator = rememberCameraManipulator(
-                        orbitHomePosition = Position(x = 0f, y = 5f, z = 10f),
-                        targetPosition = Position(x = 0f, y = -0.5f, z = 0f)
-                    ),
                     childNodes = listOf(centerNode, node),
                     onTouchEvent = { motionEvent, hitResult ->
-                        if (motionEvent.action == MotionEvent.ACTION_UP) {
+                        if (motionEvent.actionMasked == MotionEvent.ACTION_DOWN) {
+                            lastTouchX = motionEvent.x
+                            lastTouchY = motionEvent.y
+                            modelWasDragged = false
+                            if (motionEvent.pointerCount >= 2) {
+                                val dx = motionEvent.getX(0) - motionEvent.getX(1)
+                                val dy = motionEvent.getY(0) - motionEvent.getY(1)
+                                lastPinchDistance = kotlin.math.sqrt(dx * dx + dy * dy)
+                            }
+                        } else if (motionEvent.actionMasked == MotionEvent.ACTION_MOVE) {
+                            if (motionEvent.pointerCount >= 2) {
+                                val dx = motionEvent.getX(0) - motionEvent.getX(1)
+                                val dy = motionEvent.getY(0) - motionEvent.getY(1)
+                                val distance = kotlin.math.sqrt(dx * dx + dy * dy)
+                                if (lastPinchDistance > 0f) {
+                                    modelScale = (modelScale + (distance - lastPinchDistance) * 0.015f)
+                                        .coerceIn(4f, 12f)
+                                    val scaleRatio = modelScale / 7.5f
+                                    node.scale = Scale(scaleRatio, scaleRatio, scaleRatio)
+                                    modelWasDragged = true
+                                }
+                                lastPinchDistance = distance
+                            } else {
+                                val deltaX = motionEvent.x - lastTouchX
+                                val deltaY = motionEvent.y - lastTouchY
+                                if (kotlin.math.abs(deltaX) > 1f || kotlin.math.abs(deltaY) > 1f) {
+                                    modelYaw = (modelYaw - deltaX * 0.45f) % 360f
+                                    modelPitch = (modelPitch + deltaY * 0.45f).coerceIn(-85f, 85f)
+                                    node.rotation = Rotation(x = modelPitch, y = modelYaw, z = 0f)
+                                    modelWasDragged = true
+                                }
+                                lastTouchX = motionEvent.x
+                                lastTouchY = motionEvent.y
+                            }
+                        } else if (motionEvent.actionMasked == MotionEvent.ACTION_UP && !modelWasDragged) {
                             val hitNode = hitResult?.node as? ModelNode
                             val nodeName = hitNode?.name
                             if (nodeName?.startsWith("seat_") == true) {
@@ -237,16 +275,56 @@ fun MainScreen(
                         true
                     }
                 )
-                Text(
-                    text = "DRAG TO ROTATE  ·  YZ / XZ",
+                Row(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 12.dp),
-                    color = Color.White.copy(alpha = 0.58f),
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
+                        .padding(bottom = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFF111827).copy(alpha = 0.88f),
+                        modifier = Modifier.clickable {
+                            modelPitch = -55f
+                            modelYaw = 32f
+                            modelScale = 7.5f
+                            node.rotation = Rotation(x = modelPitch, y = modelYaw, z = 0f)
+                            node.scale = Scale(1f, 1f, 1f)
+                        }
+                    ) {
+                        Text(
+                            "RESET",
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                            color = Color(0xFFCDA45D),
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    listOf("−", "+").forEach { label ->
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFF111827).copy(alpha = 0.88f),
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clickable {
+                                    modelScale = (modelScale + if (label == "+") 0.6f else -0.6f)
+                                        .coerceIn(4f, 12f)
+                                    val scaleRatio = modelScale / 7.5f
+                                    node.scale = Scale(scaleRatio, scaleRatio, scaleRatio)
+                                }
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    label,
+                                    color = Color.White,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
 
