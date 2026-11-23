@@ -109,7 +109,7 @@ fun ReportsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1A263A)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                 shape = RoundedCornerShape(18.dp)
             ) {
@@ -186,7 +186,7 @@ fun ReportsScreen(
                         text = "Payment Summary - $selectedReportDate",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black,
+                        color = Color.White,
                         fontSize = 14.sp
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -212,13 +212,13 @@ fun ReportsScreen(
                                         text = "💵 Cash",
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.Black,
+                                        color = Color.White,
                                         fontSize = 12.sp
                                     )
                                     Text(
                                         text = "$cashPayments payments",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = Color.Black,
+                                        color = Color.White,
                                         fontSize = 10.sp
                                     )
                                     Text(
@@ -251,13 +251,13 @@ fun ReportsScreen(
                                         text = "💳 Online",
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.Black,
+                                        color = Color.White,
                                         fontSize = 12.sp
                                     )
                                     Text(
                                         text = "$onlinePayments payments",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = Color.Black,
+                                        color = Color.White,
                                         fontSize = 10.sp
                                     )
                                     Text(
@@ -284,7 +284,7 @@ fun ReportsScreen(
                             text = "Total: ₹${totalCashAmount + totalOnlineAmount}",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Black,
+                            color = Color.White,
                             fontSize = 16.sp
                         )
                     }
@@ -350,13 +350,13 @@ fun ReportsScreen(
                                             text = activeBooking.booking.occupiedBy,
                                             style = MaterialTheme.typography.bodyMedium,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = Color.Black,
+                                            color = Color.White,
                                             fontSize = 13.sp
                                         )
                                         Text(
                                             text = "Bill: ${activeBooking.booking.billNo}",
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = Color.Gray,
+                                            color = Color.White.copy(alpha = 0.62f),
                                             fontSize = 11.sp
                                         )
                                     }
@@ -379,7 +379,7 @@ fun ReportsScreen(
                                 Text(
                                     text = "+ ${dueStudents.size - 5} more in list below",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color.Gray,
+                                    color = Color.White.copy(alpha = 0.62f),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Medium,
                                     modifier = Modifier.padding(top = 4.dp)
@@ -405,7 +405,7 @@ fun ReportsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1A263A)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                 shape = RoundedCornerShape(12.dp)
             ) {
@@ -524,7 +524,7 @@ fun StudentReportCard(
                 onClick = { isExpanded = !isExpanded }
             ),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = Color(0xFF1A263A)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = if (isExpanded) 8.dp else 2.dp),
         shape = RoundedCornerShape(12.dp)
@@ -543,7 +543,7 @@ fun StudentReportCard(
                     text = studentName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black,
+                    color = Color.White,
                     modifier = Modifier.weight(1f)
                 )
 
@@ -649,7 +649,7 @@ fun StudentReportCard(
                         Text(
                             text = "Expiry:",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray,
+                            color = Color.White.copy(alpha = 0.62f),
                             fontWeight = FontWeight.Medium
                         )
                         Text(
@@ -673,7 +673,7 @@ fun StudentReportCard(
                         Text(
                             text = "Amount Paid:",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray,
+                            color = Color.White.copy(alpha = 0.62f),
                             fontWeight = FontWeight.Medium
                         )
                         Text(
@@ -694,7 +694,7 @@ fun StudentReportCard(
                         Text(
                             text = "Due:",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray,
+                            color = Color.White.copy(alpha = 0.62f),
                             fontWeight = FontWeight.Medium
                         )
                         Row(
@@ -733,7 +733,7 @@ fun StudentReportCard(
                         Text(
                             text = "Payment:",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray,
+                            color = Color.White.copy(alpha = 0.62f),
                             fontWeight = FontWeight.Medium
                         )
                         Surface(
@@ -775,7 +775,7 @@ fun DetailRow(
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray,
+            color = Color.White.copy(alpha = 0.62f),
             fontWeight = FontWeight.Medium
         )
         Text(

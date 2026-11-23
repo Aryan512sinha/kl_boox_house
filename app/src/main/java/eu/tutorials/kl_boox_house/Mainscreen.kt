@@ -163,12 +163,14 @@ fun MainScreen(
     val totalSlots = 57 * 4
     val availableSlots = (totalSlots - occupiedSlots).coerceAtLeast(0)
     val occupancyPercent = if (totalSlots == 0) 0 else occupiedSlots * 100 / totalSlots
-    var modelPitch by remember { mutableStateOf(-55f) }
-    var modelYaw by remember { mutableStateOf(32f) }
+    var modelPitch by remember { mutableStateOf(-90f) }
+    var modelYaw by remember { mutableStateOf(-35f) }
+    var modelRoll by remember { mutableStateOf(0f) }
     var modelScale by remember { mutableStateOf(7.5f) }
     var lastTouchX by remember { mutableStateOf(0f) }
     var lastTouchY by remember { mutableStateOf(0f) }
     var lastPinchDistance by remember { mutableStateOf(0f) }
+    var lastPinchAngle by remember { mutableStateOf(0f) }
     var modelWasDragged by remember { mutableStateOf(false) }
 
     Box(
@@ -182,7 +184,7 @@ fun MainScreen(
 
         // Camera positioning for full model visibility
         val cameraNode = rememberCameraNode(engine) {
-            position = Position(x = 0f, y = 10f, z = 14f)
+            position = Position(x = 0f, y = 14f, z = 10f)
             lookAt(centerNode)
             centerNode.addChildNode(this)
         }
@@ -195,7 +197,7 @@ fun MainScreen(
                     scaleToUnits = modelScale
             ).apply {
                     position = Position(x = 0f, y = -1.0f, z = 0f)
-                rotation = Rotation(x = modelPitch, y = modelYaw, z = 0f)
+                rotation = Rotation(x = modelPitch, y = modelYaw, z = modelRoll)
             }
         }
 
@@ -234,27 +236,33 @@ fun MainScreen(
                                 val dx = motionEvent.getX(0) - motionEvent.getX(1)
                                 val dy = motionEvent.getY(0) - motionEvent.getY(1)
                                 lastPinchDistance = kotlin.math.sqrt(dx * dx + dy * dy)
+                                lastPinchAngle = kotlin.math.atan2(dy, dx)
                             }
                         } else if (motionEvent.actionMasked == MotionEvent.ACTION_MOVE) {
                             if (motionEvent.pointerCount >= 2) {
                                 val dx = motionEvent.getX(0) - motionEvent.getX(1)
                                 val dy = motionEvent.getY(0) - motionEvent.getY(1)
                                 val distance = kotlin.math.sqrt(dx * dx + dy * dy)
+                                val angle = kotlin.math.atan2(dy, dx)
                                 if (lastPinchDistance > 0f) {
                                     modelScale = (modelScale + (distance - lastPinchDistance) * 0.015f)
                                         .coerceIn(4f, 12f)
+                                    modelRoll = (modelRoll + (angle - lastPinchAngle) * 180f / Math.PI.toFloat())
+                                        .coerceIn(-180f, 180f)
                                     val scaleRatio = modelScale / 7.5f
                                     node.scale = Scale(scaleRatio, scaleRatio, scaleRatio)
+                                    node.rotation = Rotation(x = modelPitch, y = modelYaw, z = modelRoll)
                                     modelWasDragged = true
                                 }
                                 lastPinchDistance = distance
+                                lastPinchAngle = angle
                             } else {
                                 val deltaX = motionEvent.x - lastTouchX
                                 val deltaY = motionEvent.y - lastTouchY
                                 if (kotlin.math.abs(deltaX) > 1f || kotlin.math.abs(deltaY) > 1f) {
                                     modelYaw = (modelYaw - deltaX * 0.45f) % 360f
                                     modelPitch = (modelPitch + deltaY * 0.45f).coerceIn(-85f, 85f)
-                                    node.rotation = Rotation(x = modelPitch, y = modelYaw, z = 0f)
+                                    node.rotation = Rotation(x = modelPitch, y = modelYaw, z = modelRoll)
                                     modelWasDragged = true
                                 }
                                 lastTouchX = motionEvent.x
@@ -286,10 +294,11 @@ fun MainScreen(
                         shape = RoundedCornerShape(10.dp),
                         color = Color(0xFF111827).copy(alpha = 0.88f),
                         modifier = Modifier.clickable {
-                            modelPitch = -55f
-                            modelYaw = 32f
+                            modelPitch = -90f
+                            modelYaw = -35f
+                            modelRoll = 0f
                             modelScale = 7.5f
-                            node.rotation = Rotation(x = modelPitch, y = modelYaw, z = 0f)
+                            node.rotation = Rotation(x = modelPitch, y = modelYaw, z = modelRoll)
                             node.scale = Scale(1f, 1f, 1f)
                         }
                     ) {
@@ -487,7 +496,7 @@ fun MainScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(max = 200.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1A263A)),
                     elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                     shape = RoundedCornerShape(16.dp)
                 ) {
@@ -531,7 +540,7 @@ fun MainScreen(
                                         text = "Seat ${seat.seatNumber}",
                                         style = MaterialTheme.typography.bodyLarge,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color.Black
+                                        color = Color.White
                                     )
 
                                     val occupiedSlots = seat.timeSlotBookings.size
@@ -573,7 +582,7 @@ fun MainScreen(
                     .padding(bottom = 80.dp, start = 16.dp, end = 16.dp)
                     .fillMaxWidth(0.95f)
                     .heightIn(max = 650.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1A263A)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
                 shape = RoundedCornerShape(24.dp)
             ) {
@@ -988,7 +997,7 @@ fun MainScreen(
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = CardDefaults.cardColors(
-                                    containerColor = Color.White
+                                    containerColor = Color(0xFF1A263A)
                                 ),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                                 shape = RoundedCornerShape(12.dp)

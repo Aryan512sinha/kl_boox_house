@@ -114,7 +114,7 @@ fun SeatsScreen(
                             placeholder = {
                                 Text(
                                     "Search by Bill Number",
-                                    color = Color.Gray,
+                                    color = Color.White.copy(alpha = 0.62f),
                                     fontSize = 14.sp
                                 )
                             },
@@ -295,13 +295,13 @@ fun SearchResultsSection(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1A263A)),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Text(
                         text = "No bookings found with Bill No: $searchQuery",
                         modifier = Modifier.padding(24.dp),
-                        color = Color.Gray,
+                        color = Color.White.copy(alpha = 0.62f),
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.bodyLarge
                     )
@@ -332,7 +332,7 @@ fun SearchResultCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A263A)),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -349,7 +349,7 @@ fun SearchResultCard(
                     text = "Seat ${result.seat.seatNumber}",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = Color.White
                 )
 
                 Surface(
@@ -409,7 +409,7 @@ fun SearchResultCard(
                     Text(
                         text = "Expiry:",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray,
+                        color = Color.White.copy(alpha = 0.62f),
                         fontWeight = FontWeight.Medium
                     )
                     Text(
@@ -465,7 +465,7 @@ fun AvailableSeatsView(
                     Text(
                         text = "${availableSeats.size} seats",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Black,
+                        color = Color.White,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     )
@@ -477,13 +477,13 @@ fun AvailableSeatsView(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1A263A)),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Text(
                         text = "All seats are fully occupied!",
                         modifier = Modifier.padding(24.dp),
-                        color = Color.Gray,
+                        color = Color.White.copy(alpha = 0.62f),
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.bodyLarge
                     )
@@ -511,7 +511,7 @@ fun AvailableSeatCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A263A)),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -528,7 +528,7 @@ fun AvailableSeatCard(
                     text = "Seat ${seat.seatNumber}",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = Color.White
                 )
 
                 val availableSlots = 4 - seat.timeSlotBookings.size
@@ -578,7 +578,7 @@ fun AvailableSeatCard(
                         Text(
                             text = timeSlot,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.Black
+                            color = Color.White
                         )
 
                         Surface(
@@ -639,7 +639,7 @@ fun AllSeatsView(
                     Text(
                         text = "${allSeats.size} total",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Black,
+                        color = Color.White,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     )
@@ -669,7 +669,7 @@ fun AllSeatCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A263A)),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -736,14 +736,14 @@ fun AllSeatCard(
                                 Text(
                                     text = timeSlot,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color.Black,
+                                    color = Color.White,
                                     fontWeight = FontWeight.Medium
                                 )
                                 if (isOccupied && booking != null) {
                                     Text(
                                         text = booking.occupiedBy,
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = Color.Gray,
+                                        color = Color.White.copy(alpha = 0.62f),
                                         fontSize = 11.sp
                                     )
                                 }
@@ -783,7 +783,7 @@ fun SeatDetailBottomSheet(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A263A)),
         elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 24.dp, bottomEnd = 24.dp)
     ) {
@@ -801,7 +801,7 @@ fun SeatDetailBottomSheet(
                     Text(
                         text = "Seat ${seat.seatNumber} Details",
                         style = MaterialTheme.typography.headlineSmall,
-                        color = Color.Black,
+                        color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
                     IconButton(onClick = onDismiss) {
@@ -823,7 +823,7 @@ fun SeatDetailBottomSheet(
                     Text(
                         text = "Occupied Slots: $occupiedSlots/4",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Black,
+                        color = Color.White,
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(12.dp)
                     )

@@ -252,7 +252,7 @@ fun ExpiringBookingCard(booking: ExpiringBooking) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = Color(0xFF1A263A)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(16.dp)
@@ -295,7 +295,7 @@ fun ExpiringBookingCard(booking: ExpiringBooking) {
 
                         Text(
                             text = "•",
-                            color = Color.Gray,
+                            color = Color.White.copy(alpha = 0.62f),
                             fontSize = 12.sp
                         )
 
@@ -352,7 +352,7 @@ fun ExpiringBookingCard(booking: ExpiringBooking) {
                     Text(
                         text = "Contact Information",
                         style = MaterialTheme.typography.labelMedium,
-                        color = Color.Gray,
+                        color = Color.White.copy(alpha = 0.62f),
                         fontWeight = FontWeight.SemiBold
                     )
 
@@ -385,13 +385,13 @@ fun ExpiringBookingCard(booking: ExpiringBooking) {
                             Text(
                                 text = "Mobile Number",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.Gray,
+                                color = Color.White.copy(alpha = 0.62f),
                                 fontSize = 11.sp
                             )
                             Text(
                                 text = booking.mobileNo,
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = Color.Black,
+                                color = Color.White,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -411,7 +411,7 @@ fun ExpiringBookingCard(booking: ExpiringBooking) {
                         Text(
                             text = booking.billNo,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Black,
+                            color = Color.White,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
